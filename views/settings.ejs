@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - SMon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen">
+  <div class="flex h-screen">
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-button" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
+      <i class="fas fa-bars text-white"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-slate-950 border-r border-slate-700 shadow-xl flex flex-col fixed md:relative inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+      <!-- Header -->
+      <div class="p-6 border-b border-slate-700">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-chart-line text-white font-bold text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">SMon</h1>
+            <p class="text-xs text-gray-400">SNMP Monitor</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-4 py-6 overflow-y-auto">
+        <div class="space-y-2">
+          <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-chart-area w-5"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/monitoring" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span>Bandwidth Monitor</span>
+          </a>
+          <a href="/devices" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-server w-5"></i>
+            <span>Devices</span>
+          </a>
+          <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-history w-5"></i>
+            <span>History</span>
+          </a>
+          <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium transition-all hover:shadow-lg">
+            <i class="fas fa-cog w-5"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-4 py-4 border-t border-slate-700">
+        <div class="text-xs text-gray-500 text-center">
+          <p>SNMP Monitor v2.0</p>
+          <p>Network Intelligence</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <!-- Top Header -->
+      <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-10">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Settings</h2>
+            <p class="text-gray-400 text-sm mt-1">Configure system parameters and monitoring options</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8">
+        <!-- Settings Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Polling Interval Setting -->
+          <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+            <div class="flex items-start justify-between mb-6">
+              <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                  <i class="fas fa-sync-alt text-blue-500"></i>
+                  Polling Interval
+                </h3>
+                <p class="text-gray-400 text-sm mt-2">Set how often SNMP data is collected from devices</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Current Setting Display -->
+              <div class="bg-slate-700/50 rounded-lg p-4">
+                <p class="text-xs text-gray-400 mb-1">Current Interval</p>
+                <div class="text-3xl font-bold text-blue-400" id="current-interval-display">
+                  <%= settings.pollingInterval / 1000 %> sec
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  (<%= (settings.pollingInterval / 60000).toFixed(1) %> minutes)
+                </p>
+              </div>
+
+              <!-- Input Section -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Interval (seconds)</label>
+                <div class="flex gap-2">
+                  <input type="number" 
+                         id="polling-interval-input" 
+                         min="10" 
+                         step="5"
+                         value="<%= settings.pollingInterval / 1000 %>"
+                         class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <button id="save-interval-btn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium">
+                    <i class="fas fa-check mr-2"></i>Save
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Minimum: 10 seconds | Recommended: 300 seconds (5 minutes)</p>
+              </div>
+
+              <!-- Preset Buttons -->
+              <div>
+                <p class="text-xs text-gray-400 mb-2">Quick Presets</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="30">
+                    30 seconds
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="60">
+                    1 minute
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="300">
+                    5 minutes
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="900">
+                    15 minutes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Information -->
+          <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
+              <i class="fas fa-info-circle text-purple-500"></i>
+              System Information
+            </h3>
+
+            <div class="space-y-4">
+              <!-- Polling Info -->
+              <div class="border-b border-slate-700 pb-4">
+                <p class="text-gray-400 text-sm">Polling Status</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                  <p class="font-medium text-green-400">Active</p>
+                </div>
+              </div>
+
+              <!-- Interval Conversion -->
+              <div class="border-b border-slate-700 pb-4">
+                <p class="text-gray-400 text-sm">Interval Breakdown</p>
+                <div class="mt-2 space-y-1 text-sm">
+                  <p class="text-gray-300"><span class="text-gray-500">Seconds:</span> <span class="font-mono" id="info-seconds"><%= settings.pollingInterval / 1000 %></span></p>
+                  <p class="text-gray-300"><span class="text-gray-500">Minutes:</span> <span class="font-mono" id="info-minutes"><%= (settings.pollingInterval / 60000).toFixed(2) %></span></p>
+                  <p class="text-gray-300"><span class="text-gray-500">Polls/Hour:</span> <span class="font-mono" id="info-polls"><%= (3600 / (settings.pollingInterval / 1000)).toFixed(1) %></span></p>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div>
+                <p class="text-gray-400 text-sm">What is Polling?</p>
+                <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                  Polling is the process of periodically querying SNMP devices for network statistics. 
+                  Higher frequency = more data points but more network traffic. 
+                  Lower frequency = less traffic but fewer data points.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Settings Section -->
+        <div class="mt-6 bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
+            <i class="fas fa-sliders-h text-yellow-500"></i>
+            Advanced Settings
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Data Retention -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Data Retention Policy</label>
+              <div class="flex gap-2">
+                <input type="number" 
+                       id="data-retention-input"
+                       min="1" 
+                       max="365"
+                       step="1"
+                       value="<%= settings.dataRetention || 30 %>"
+                       class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="flex items-center text-gray-400">days</span>
+                <button id="save-retention-btn" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium text-sm">
+                  <i class="fas fa-check mr-1"></i>Save
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">How long to keep historical data (1-365 days)</p>
+            </div>
+
+            <!-- Alert Threshold -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">High Bandwidth Threshold</label>
+              <div class="flex gap-2">
+                <input type="number" 
+                       value="80" 
+                       min="0" 
+                       max="100"
+                       class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       disabled>
+                <span class="flex items-center text-gray-400">%</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Trigger alert when bandwidth exceeds</p>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-slate-700 my-6"></div>
+
+          <!-- Interface Selection for Graphing -->
+          <h4 class="text-md font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-line text-green-500"></i>
+            Select Interfaces to Graph
+          </h4>
+
+          <div class="space-y-4">
+            <% Object.entries(devices).forEach(([deviceId, device]) => { %>
+              <div class="bg-slate-700/50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h5 class="font-semibold text-white flex items-center gap-2">
+                    <i class="fas fa-server text-blue-400"></i>
+                    <%= device.name %>
+                  </h5>
+                  <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                    <%= device.selectedInterfaces ? device.selectedInterfaces.length : 0 %> selected
+                  </span>
+                </div>
+
+                <% if (device.selectedInterfaces && device.selectedInterfaces.length > 0) { %>
+                  <div class="flex flex-wrap gap-2">
+                    <% device.selectedInterfaces.forEach(iface => { %>
+                      <%- typeof iface === 'string' ? `
+                        <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
+                          <input type="checkbox" 
+                                 name="interface-${deviceId}" 
+                                 value="${iface}"
+                                 data-device="${deviceId}"
+                                 class="interface-checkbox rounded"
+                                 checked>
+                          <span class="text-sm text-gray-200">${iface}</span>
+                        </label>
+                      ` : `
+                        <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
+                          <input type="checkbox" 
+                                 name="interface-${deviceId}" 
+                                 value="${iface.name}"
+                                 data-device="${deviceId}"
+                                 class="interface-checkbox rounded"
+                                 checked>
+                          <span class="text-sm text-gray-200">${iface.name}</span>
+                        </label>
+                      ` %>
+                    <% }); %>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-2">Check interfaces to include in graph monitoring</p>
+                <% } else { %>
+                  <p class="text-xs text-gray-500">No interfaces selected for this device</p>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+
+          <!-- Save Interface Selection Button -->
+          <div class="mt-4">
+            <button id="save-interfaces-btn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium">
+              <i class="fas fa-save mr-2"></i>Save Interface Selection
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="hidden mt-6 p-4 rounded-lg text-sm font-medium">
+          <!-- Will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize mobile menu
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const sidebar = document.getElementById('sidebar');
+      const mobileOverlay = document.getElementById('mobile-overlay');
+
+      // Mobile menu toggle
+      mobileMenuButton.addEventListener('click', function() {
+        sidebar.classList.toggle('-translate-x-full');
+        mobileOverlay.classList.toggle('hidden');
+      });
+
+      // Close sidebar when clicking overlay
+      mobileOverlay.addEventListener('click', function() {
+        sidebar.classList.add('-translate-x-full');
+        mobileOverlay.classList.add('hidden');
+      });
+    });
+
+    const pollingIntervalInput = document.getElementById('polling-interval-input');
+    const saveIntervalBtn = document.getElementById('save-interval-btn');
+    const dataRetentionInput = document.getElementById('data-retention-input');
+    const saveRetentionBtn = document.getElementById('save-retention-btn');
+    const saveInterfacesBtn = document.getElementById('save-interfaces-btn');
+    const statusMessage = document.getElementById('status-message');
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    const interfaceCheckboxes = document.querySelectorAll('.interface-checkbox');
+
+    // Handle preset buttons
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const value = this.getAttribute('data-value');
+        pollingIntervalInput.value = value;
+        updateIntervalDisplay(value);
+      });
+    });
+
+    // Update display when input changes
+    pollingIntervalInput.addEventListener('input', function() {
+      updateIntervalDisplay(this.value);
+    });
+
+    function updateIntervalDisplay(seconds) {
+      const mins = (seconds / 60).toFixed(2);
+      const pollsPerHour = (3600 / seconds).toFixed(1);
+      
+      document.getElementById('current-interval-display').textContent = `${seconds} sec`;
+      document.getElementById('info-seconds').textContent = seconds;
+      document.getElementById('info-minutes').textContent = mins;
+      document.getElementById('info-polls').textContent = pollsPerHour;
+    }
+
+    // Save interval
+    saveIntervalBtn.addEventListener('click', async function() {
+      const seconds = parseInt(pollingIntervalInput.value);
+
+      if (!seconds || seconds < 10) {
+        showStatus('Error: Interval must be at least 10 seconds', 'error');
+        return;
+      }
+
+      saveIntervalBtn.disabled = true;
+      saveIntervalBtn.classList.add('opacity-50');
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pollingIntervalSeconds: seconds })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update settings');
+        }
+
+        const data = await response.json();
+        showStatus(`✓ Polling interval updated to ${seconds} seconds (${(seconds/60).toFixed(1)} minutes)`, 'success');
+        
+        // Refresh settings after 2 seconds
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      } catch (err) {
+        console.error('Error:', err);
+        showStatus('✗ Failed to update polling interval', 'error');
+      } finally {
+        saveIntervalBtn.disabled = false;
+        saveIntervalBtn.classList.remove('opacity-50');
+      }
+    });
+
+    // Save data retention
+    saveRetentionBtn.addEventListener('click', async function() {
+      const days = parseInt(dataRetentionInput.value);
+
+      if (!days || days < 1 || days > 365) {
+        showStatus('Error: Data retention must be between 1 and 365 days', 'error');
+        return;
+      }
+
+      saveRetentionBtn.disabled = true;
+      saveRetentionBtn.classList.add('opacity-50');
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataRetentionDays: days })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update settings');
+        }
+
+        const data = await response.json();
+        showStatus(`✓ Data retention updated to ${days} days`, 'success');
+        
+        // Refresh settings after 2 seconds
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      } catch (err) {
+        console.error('Error:', err);
+        showStatus('✗ Failed to update data retention', 'error');
+      } finally {
+        saveRetentionBtn.disabled = false;
+        saveRetentionBtn.classList.remove('opacity-50');
+      }
+    });
+
+    // Save interface selection
+    saveInterfacesBtn.addEventListener('click', async function() {
+      const selectedByDevice = {};
+      
+      // Group checked interfaces by device
+      interfaceCheckboxes.forEach(checkbox => {
+        const deviceId = checkbox.getAttribute('data-device');
+        if (!selectedByDevice[deviceId]) {
+          selectedByDevice[deviceId] = [];
+        }
+        if (checkbox.checked) {
+          selectedByDevice[deviceId].push(checkbox.value);
+        }
+      });
+
+      // Check if at least one interface is selected
+      const totalSelected = Object.values(selectedByDevice).reduce((sum, arr) => sum + arr.length, 0);
+      if (totalSelected === 0) {
+        showStatus('Error: Please select at least one interface', 'error');
+        return;
+      }
+
+      saveInterfacesBtn.disabled = true;
+      saveInterfacesBtn.classList.add('opacity-50');
+
+      try {
+        // Save each device's interface selection
+        const promises = Object.entries(selectedByDevice).map(([deviceId, interfaces]) =>
+          fetch(`/api/devices/${deviceId}/select-interfaces`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ selectedInterfaces: interfaces })
+          })
+        );
+
+        const responses = await Promise.all(promises);
+        const allSuccess = responses.every(r => r.ok);
+
+        if (!allSuccess) {
+          throw new Error('Some updates failed');
+        }
+
+        showStatus(`✓ Interface selection updated! ${totalSelected} interfaces selected for graphing`, 'success');
+        
+        // Refresh after 2 seconds
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      } catch (err) {
+        console.error('Error:', err);
+        showStatus('✗ Failed to save interface selection', 'error');
+      } finally {
+        saveInterfacesBtn.disabled = false;
+        saveInterfacesBtn.classList.remove('opacity-50');
+      }
+    });
+
+    function showStatus(message, type) {
+      statusMessage.textContent = message;
+      statusMessage.classList.remove('hidden');
+      
+      if (type === 'success') {
+        statusMessage.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg';
+      } else {
+        statusMessage.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg';
+      }
+
+      setTimeout(() => {
+        statusMessage.classList.add('hidden');
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

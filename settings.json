@@ -1,0 +1,4 @@
+{
+  "pollingInterval": 60000,
+  "dataRetention": 30
+}

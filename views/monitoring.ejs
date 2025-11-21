@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bandwidth Monitoring - SMon</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen">
+  <div class="flex h-screen">
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-button" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
+      <i class="fas fa-bars text-white"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-slate-950 border-r border-slate-700 shadow-xl flex flex-col fixed md:relative inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+      <!-- Header -->
+      <div class="p-6 border-b border-slate-700">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-chart-line text-white font-bold text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">SMon</h1>
+            <p class="text-xs text-gray-400">SNMP Monitor</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-4 py-6 overflow-y-auto">
+        <div class="space-y-2">
+          <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-chart-area w-5"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/monitoring" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium transition-all hover:shadow-lg">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span>Bandwidth Monitor</span>
+          </a>
+          <a href="/devices" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-server w-5"></i>
+            <span>Devices</span>
+          </a>
+          <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-cog w-5"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-4 py-4 border-t border-slate-700">
+        <div class="text-xs text-gray-500 text-center">
+          <p>SNMP Monitor v2.0</p>
+          <p>Network Intelligence</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto md:ml-0">
+      <!-- Top Header -->
+      <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-20">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Bandwidth Monitoring</h2>
+            <p class="text-gray-400 text-sm mt-1">Real-time Interface Performance & Analysis</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-400"><i class="fas fa-circle text-green-500 mr-2"></i>Auto-Refresh: 1 min</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8">
+        <!-- Filter Controls -->
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8 shadow-lg">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Device Selector -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-server mr-2 text-blue-400"></i>Select Device
+              </label>
+              <select id="device-selector" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Choose a device...</option>
+                <% Object.entries(devices).forEach(([key, device]) => { %>
+                  <option value="<%= key %>" <%= key === selectedDevice ? 'selected' : '' %>>
+                    <%= device.name %>
+                  </option>
+                <% }); %>
+              </select>
+            </div>
+
+            <!-- Interface Selector -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-network-wired mr-2 text-green-400"></i>Select Interface
+              </label>
+              <select id="interface-selector" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="all">All Selected Interfaces</option>
+              </select>
+            </div>
+
+            <!-- Time Range Selector -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-calendar-alt mr-2 text-purple-400"></i>Time Range
+              </label>
+              <select id="time-range-selector" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="-1h">Last 1 Hour</option>
+                <option value="-24h" selected>Last 24 Hours</option>
+                <option value="-7d">Last 7 Days</option>
+                <option value="-30d">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+
+            <!-- Action Button -->
+            <div class="flex items-end">
+              <button onclick="loadChartData()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                <i class="fas fa-sync-alt"></i>
+                <span>Load Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Date Range (Hidden by default) -->
+          <div id="custom-date-from" class="hidden mt-6 pt-6 border-t border-slate-600">
+            <label class="block text-sm font-medium text-gray-300 mb-2">From Date:</label>
+            <input type="datetime-local" id="date-from-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div id="custom-date-to" class="hidden mt-4">
+            <label class="block text-sm font-medium text-gray-300 mb-2">To Date:</label>
+            <input type="datetime-local" id="date-to-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <!-- Charts Container -->
+        <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Charts will be loaded here -->
+          <div class="col-span-full text-center py-12 text-gray-400">
+            <i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i>
+            <p>Select device and click "Load Data" to display bandwidth charts</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentDevice = '<%= selectedDevice %>';
+    let selectedInterfaces = [];
+    let chartInstances = {}; // Store chart instances for cleanup
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const deviceSelector = document.getElementById('device-selector');
+      const timeRangeSelector = document.getElementById('time-range-selector');
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const sidebar = document.getElementById('sidebar');
+      const mobileOverlay = document.getElementById('mobile-overlay');
+
+      // Mobile menu toggle
+      mobileMenuButton.addEventListener('click', function() {
+        sidebar.classList.toggle('-translate-x-full');
+        mobileOverlay.classList.toggle('hidden');
+      });
+
+      // Close sidebar when clicking overlay
+      mobileOverlay.addEventListener('click', function() {
+        sidebar.classList.add('-translate-x-full');
+        mobileOverlay.classList.add('hidden');
+      });
+
+      // Load interfaces when device changes
+      deviceSelector.addEventListener('change', function() {
+        currentDevice = this.value;
+        if (currentDevice) {
+          loadInterfaces(currentDevice);
+        }
+      });
+
+      // Show/hide custom date inputs
+      timeRangeSelector.addEventListener('change', function() {
+        const customFromDiv = document.getElementById('custom-date-from');
+        const customToDiv = document.getElementById('custom-date-to');
+        
+        if (this.value === 'custom') {
+          customFromDiv.classList.remove('hidden');
+          customToDiv.classList.remove('hidden');
+        } else {
+          customFromDiv.classList.add('hidden');
+          customToDiv.classList.add('hidden');
+        }
+      });
+
+      // Load initial device if available
+      if (currentDevice) {
+        deviceSelector.value = currentDevice;
+        loadInterfaces(currentDevice);
+      }
+    });
+
+    function loadInterfaces(deviceId) {
+      fetch(`/api/devices/${deviceId}/interfaces`)
+        .then(response => response.json())
+        .then(interfaces => {
+          const selector = document.getElementById('interface-selector');
+          const currentValue = selector.value;
+          selector.innerHTML = '<option value="all">All Selected Interfaces</option>';
+          
+          // Get selected interfaces from config
+          fetch('/api/devices')
+            .then(r => r.json())
+            .then(devices => {
+              const device = devices[deviceId];
+              if (device && device.selectedInterfaces) {
+                selectedInterfaces = device.selectedInterfaces;
+                
+                // Convert to array of names for compatibility (support both old and new format)
+                const selectedNames = selectedInterfaces.map(i => typeof i === 'string' ? i : i.name);
+                
+                // Show only selected interfaces in dropdown
+                interfaces.forEach(iface => {
+                  if (selectedNames.includes(iface.name)) {
+                    const option = document.createElement('option');
+                    option.value = iface.name;
+                    option.textContent = iface.name;
+                    selector.appendChild(option);
+                  }
+                });
+              }
+            });
+          
+          selector.value = currentValue || 'all';
+        })
+        .catch(err => console.error('Error loading interfaces:', err));
+    }
+
+    function createInterfaceChart(interfaceName, rxData, txData) {
+      const container = document.getElementById('charts-container');
+      
+      // Clear placeholder if first chart
+      if (container.children.length === 1 && container.children[0].classList.contains('col-span-full')) {
+        container.innerHTML = '';
+      }
+      
+      const chartId = `chart-${interfaceName.replace(/\s+/g, '-')}`;
+      
+      // Create card
+      const card = document.createElement('div');
+      card.className = 'bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg';
+      card.innerHTML = `
+        <div class="mb-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-network-wired text-blue-400"></i>
+            ${interfaceName}
+          </h3>
+          <p class="text-xs text-gray-400 mt-1">Bandwidth (Mbps) - RX/TX</p>
+        </div>
+        <div class="relative" style="height: 300px;">
+          <canvas id="${chartId}"></canvas>
+        </div>
+      `;
+      container.appendChild(card);
+      
+      // Destroy old chart if exists
+      if (chartInstances[chartId]) {
+        chartInstances[chartId].destroy();
+      }
+      
+      // Create chart with RX and TX datasets
+      const ctx = document.getElementById(chartId).getContext('2d');
+      chartInstances[chartId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: `${interfaceName} - RX (Download)`,
+            data: rxData.map(d => ({
+              x: new Date(d.time).getTime(),
+              y: parseFloat(d.value)
+            })),
+            borderColor: '#10b981', // Green for RX
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          }, {
+            label: `${interfaceName} - TX (Upload)`,
+            data: txData.map(d => ({
+              x: new Date(d.time).getTime(),
+              y: parseFloat(d.value)
+            })),
+            borderColor: '#f59e0b', // Orange for TX
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#f59e0b',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: '#3b82f6',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed.y;
+                  if (value >= 1) {
+                    return 'Bandwidth: ' + value.toFixed(2) + ' Mbps';
+                  } else if (value >= 0.001) {
+                    return 'Bandwidth: ' + (value * 1000).toFixed(0) + ' Kbps';
+                  } else if (value >= 0.000001) {
+                    return 'Bandwidth: ' + (value * 1000000).toFixed(0) + ' bps';
+                  } else {
+                    return 'Bandwidth: ' + value.toFixed(6) + ' Mbps';
+                  }
+                },
+                title: function(context) {
+                  if (context && context[0]) {
+                    return new Date(context[0].parsed.x).toLocaleString();
+                  }
+                  return '';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                displayFormats: {
+                  hour: 'MMM dd HH:mm',
+                  day: 'MMM dd',
+                  week: 'MMM dd'
+                }
+              },
+              grid: {
+                color: 'rgba(100, 116, 139, 0.2)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#94a3b8',
+                maxRotation: 45,
+                minRotation: 0
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(100, 116, 139, 0.2)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value, index, values) {
+                  if (value >= 1) {
+                    return value.toFixed(2) + ' Mbps';
+                  } else if (value >= 0.001) {
+                    return (value * 1000).toFixed(0) + ' Kbps';
+                  } else if (value >= 0.000001) {
+                    return (value * 1000000).toFixed(0) + ' bps';
+                  } else {
+                    return value.toFixed(6) + ' Mbps';
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function loadChartData() {
+      if (!currentDevice) {
+        alert('Please select a device');
+        return;
+      }
+
+      const container = document.getElementById('charts-container');
+      container.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading data...</p></div>';
+      
+      const timeRange = document.getElementById('time-range-selector').value;
+      let timeRangeParam = timeRange;
+      
+      if (timeRange === 'custom') {
+        const dateFrom = document.getElementById('date-from-input').value;
+        const dateTo = document.getElementById('date-to-input').value;
+        
+        if (!dateFrom || !dateTo) {
+          alert('Please select both From and To dates');
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>Select device and click "Load Data" to display bandwidth charts</p></div>';
+          return;
+        }
+        
+        const startDate = new Date(dateFrom);
+        const endDate = new Date(dateTo);
+        
+        if (startDate >= endDate) {
+          alert('From date must be before To date');
+          console.error('Invalid date range:', { dateFrom, dateTo });
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>Select device and click "Load Data" to display bandwidth charts</p></div>';
+          return;
+        }
+        
+        const startISO = startDate.toISOString();
+        const endISO = endDate.toISOString();
+        
+        timeRangeParam = `custom:${startISO},${endISO}`;
+        console.log('Custom date range - Valid:', { 
+          dateFrom, 
+          dateTo, 
+          startISO, 
+          endISO, 
+          timeRangeParam
+        });
+      }
+
+      // Clear old charts
+      Object.values(chartInstances).forEach(chart => chart.destroy());
+      chartInstances = {};
+
+      const interfaceSelector = document.getElementById('interface-selector').value;
+      
+      if (interfaceSelector === 'all' && selectedInterfaces.length > 0) {
+        // Load all selected interfaces
+        container.innerHTML = '';
+        let completed = 0;
+
+        selectedInterfaces.forEach(iface => {
+          // Support both old format (string) and new format ({index, name})
+          const ifaceName = typeof iface === 'string' ? iface : iface.name;
+          
+          // Load RX data
+          const rxPromise = fetch(`/api/data?device=${encodeURIComponent(currentDevice)}&interface=${encodeURIComponent(ifaceName)}&direction=rx&timeRange=${encodeURIComponent(timeRangeParam)}`)
+            .then(response => response.json())
+            .catch(err => {
+              console.error(`Error loading RX data for ${ifaceName}:`, err);
+              return [];
+            });
+          
+          // Load TX data
+          const txPromise = fetch(`/api/data?device=${encodeURIComponent(currentDevice)}&interface=${encodeURIComponent(ifaceName)}&direction=tx&timeRange=${encodeURIComponent(timeRangeParam)}`)
+            .then(response => response.json())
+            .catch(err => {
+              console.error(`Error loading TX data for ${ifaceName}:`, err);
+              return [];
+            });
+          
+          // Wait for both RX and TX data
+          Promise.all([rxPromise, txPromise]).then(([rxData, txData]) => {
+            // Only create chart if there's actual data (not all zeros or empty)
+            const hasRxData = rxData.length > 0 && rxData.some(d => d.value > 0.0001);
+            const hasTxData = txData.length > 0 && txData.some(d => d.value > 0.0001);
+            
+            if (hasRxData || hasTxData) {
+              createInterfaceChart(ifaceName, rxData, txData);
+            } else {
+              console.log(`Skipping chart for ${ifaceName} - no traffic data`);
+            }
+            completed++;
+            
+            // Show message if no interfaces have data
+            if (completed === selectedInterfaces.length) {
+              const charts = container.querySelectorAll('.bg-slate-800');
+              if (charts.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>No interfaces with traffic data found for the selected time range</p></div>';
+              }
+            }
+          });
+        });
+      } else if (interfaceSelector !== 'all') {
+        // Load specific interface
+        container.innerHTML = '';
+        
+        // Load RX data
+        const rxPromise = fetch(`/api/data?device=${encodeURIComponent(currentDevice)}&interface=${encodeURIComponent(interfaceSelector)}&direction=rx&timeRange=${encodeURIComponent(timeRangeParam)}`)
+          .then(response => response.json())
+          .catch(err => {
+            console.error(`Error loading RX data for ${interfaceSelector}:`, err);
+            return [];
+          });
+        
+        // Load TX data
+        const txPromise = fetch(`/api/data?device=${encodeURIComponent(currentDevice)}&interface=${encodeURIComponent(interfaceSelector)}&direction=tx&timeRange=${encodeURIComponent(timeRangeParam)}`)
+          .then(response => response.json())
+          .catch(err => {
+            console.error(`Error loading TX data for ${interfaceSelector}:`, err);
+            return [];
+          });
+        
+        // Wait for both RX and TX data
+        Promise.all([rxPromise, txPromise]).then(([rxData, txData]) => {
+          const hasRxData = rxData.length > 0 && rxData.some(d => d.value > 0.0001);
+          const hasTxData = txData.length > 0 && txData.some(d => d.value > 0.0001);
+          
+          if (hasRxData || hasTxData) {
+            createInterfaceChart(interfaceSelector, rxData, txData);
+          } else {
+            container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>No traffic data found for this interface in the selected time range</p></div>';
+          }
+        }).catch(err => {
+          console.error('Error loading data:', err);
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-red-400"><p>Error loading data</p></div>';
+        });
+      } else {
+        alert('Please select interfaces from Device Management first');
+        container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>Select device and click "Load Data" to display bandwidth charts</p></div>';
+      }
+    }
+
+    // Auto-refresh every 1 minute
+    setInterval(loadChartData, 60000);
+  </script>
+</body>
+</html>

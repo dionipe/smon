@@ -1,0 +1,370 @@
+{
+  "snmpDevices": [
+    {
+      "id": "router2",
+      "name": "Router 2",
+      "host": "192.168.1.1",
+      "community": "public",
+      "enabled": false,
+      "selectedInterfaces": []
+    },
+    {
+      "id": "switch1",
+      "name": "Switch 1",
+      "host": "192.168.1.10",
+      "community": "public",
+      "enabled": false,
+      "selectedInterfaces": []
+    },
+    {
+      "id": "core-ipe",
+      "name": "Core Router Updated",
+      "host": "172.16.27.1",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 106,
+          "name": "ether1"
+        },
+        {
+          "index": 6,
+          "name": "ether4"
+        },
+        {
+          "index": 4,
+          "name": "ether7"
+        },
+        {
+          "index": 60,
+          "name": "indobsd"
+        },
+        {
+          "index": 104,
+          "name": "br2-wifi"
+        },
+        {
+          "index": 149,
+          "name": "IndoBSD-Biznet-pptp"
+        }
+      ]
+    },
+    {
+      "id": "disti-ipe",
+      "name": "Distribusi Ipe",
+      "host": "172.16.27.2",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 1,
+          "name": "ether1"
+        },
+        {
+          "index": 2,
+          "name": "ether2"
+        },
+        {
+          "index": 3,
+          "name": "ether3"
+        },
+        {
+          "index": 4,
+          "name": "ether4"
+        },
+        {
+          "index": 6,
+          "name": "ether6"
+        },
+        {
+          "index": 10,
+          "name": "ether10"
+        },
+        {
+          "index": 11,
+          "name": "ether11"
+        },
+        {
+          "index": 12,
+          "name": "ether12"
+        },
+        {
+          "index": 14,
+          "name": "ether14"
+        },
+        {
+          "index": 19,
+          "name": "bridgeLocal01"
+        },
+        {
+          "index": 20,
+          "name": "bridgeLocal02"
+        },
+        {
+          "index": 22,
+          "name": "vlan-202"
+        },
+        {
+          "index": 25,
+          "name": "vlan-203"
+        },
+        {
+          "index": 26,
+          "name": "vlan-204"
+        },
+        {
+          "index": 27,
+          "name": "vlan-10"
+        },
+        {
+          "index": 28,
+          "name": "vlan-10-pub"
+        },
+        {
+          "index": 31,
+          "name": "pppoe-test"
+        }
+      ]
+    },
+    {
+      "id": "core-biznet",
+      "name": "Core-Biznet",
+      "host": "103.142.215.254",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 1,
+          "name": "sfp-sfpplus1"
+        },
+        {
+          "index": 3,
+          "name": "ether1"
+        },
+        {
+          "index": 4,
+          "name": "ether2"
+        },
+        {
+          "index": 6,
+          "name": "ether4"
+        },
+        {
+          "index": 11,
+          "name": "vlan-250"
+        },
+        {
+          "index": 12,
+          "name": "vlan-251"
+        },
+        {
+          "index": 13,
+          "name": "vlan-252"
+        },
+        {
+          "index": 14,
+          "name": "vlan-253"
+        }
+      ]
+    },
+    {
+      "id": "core-idc",
+      "name": "Core IndoBSD IDC",
+      "host": "103.142.214.254",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 1,
+          "name": "sfp-sfpplus1"
+        },
+        {
+          "index": 2,
+          "name": "combo1"
+        },
+        {
+          "index": 11,
+          "name": "vlan12-public-vm2"
+        },
+        {
+          "index": 13,
+          "name": "vlan10-public-vm1"
+        },
+        {
+          "index": 14,
+          "name": "vlan20-215"
+        },
+        {
+          "index": 16,
+          "name": "vlan-100"
+        },
+        {
+          "index": 18,
+          "name": "vlan-3357"
+        }
+      ]
+    },
+    {
+      "id": "distribusi-biznet-indobsd",
+      "name": "Distribusi IndoBSD - Biznet",
+      "host": "103.142.215.250",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 1,
+          "name": "sfp-sfpplus1"
+        },
+        {
+          "index": 5,
+          "name": "sfp-sfpplus5"
+        },
+        {
+          "index": 6,
+          "name": "sfp-sfpplus6"
+        },
+        {
+          "index": 7,
+          "name": "sfp-sfpplus7"
+        },
+        {
+          "index": 8,
+          "name": "sfp-sfpplus8"
+        },
+        {
+          "index": 9,
+          "name": "sfp-sfpplus9"
+        },
+        {
+          "index": 10,
+          "name": "sfp-sfpplus10"
+        },
+        {
+          "index": 14,
+          "name": "sfp-sfpplus14"
+        },
+        {
+          "index": 15,
+          "name": "sfp-sfpplus15"
+        },
+        {
+          "index": 16,
+          "name": "sfp-sfpplus16"
+        },
+        {
+          "index": 17,
+          "name": "ether1"
+        },
+        {
+          "index": 19,
+          "name": "br0"
+        },
+        {
+          "index": 21,
+          "name": "vlan-250"
+        },
+        {
+          "index": 22,
+          "name": "vlan-217-iDrac"
+        },
+        {
+          "index": 24,
+          "name": "vlan-219"
+        },
+        {
+          "index": 26,
+          "name": "vlan-220"
+        },
+        {
+          "index": 27,
+          "name": "vlan-221"
+        },
+        {
+          "index": 28,
+          "name": "vlan-222"
+        },
+        {
+          "index": 31,
+          "name": "vlan-223"
+        }
+      ]
+    },
+    {
+      "id": "distri-idc3d-indobsd",
+      "name": "Distribusi IndoBSD IDC3D",
+      "host": "103.142.214.250",
+      "community": "public",
+      "enabled": true,
+      "selectedInterfaces": [
+        {
+          "index": 1,
+          "name": "ether1"
+        },
+        {
+          "index": 2,
+          "name": "ether2"
+        },
+        {
+          "index": 3,
+          "name": "ether3"
+        },
+        {
+          "index": 4,
+          "name": "ether4"
+        },
+        {
+          "index": 5,
+          "name": "ether5"
+        },
+        {
+          "index": 6,
+          "name": "ether6"
+        },
+        {
+          "index": 7,
+          "name": "ether7"
+        },
+        {
+          "index": 8,
+          "name": "ether8"
+        },
+        {
+          "index": 9,
+          "name": "ether9"
+        },
+        {
+          "index": 10,
+          "name": "ether10"
+        },
+        {
+          "index": 12,
+          "name": "ether12"
+        },
+        {
+          "index": 25,
+          "name": "sfp-sfpplus1"
+        },
+        {
+          "index": 28,
+          "name": "br0-mgmt"
+        },
+        {
+          "index": 29,
+          "name": "br1-cluster"
+        },
+        {
+          "index": 32,
+          "name": "vlan11-priv-vm1"
+        },
+        {
+          "index": 33,
+          "name": "vlan12-public-vm2"
+        },
+        {
+          "index": 37,
+          "name": "vlan250-Zetoup"
+        }
+      ]
+    }
+  ]
+}

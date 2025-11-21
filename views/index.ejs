@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMon - SNMP Monitoring Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen">
+  <div class="flex h-screen">
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-button" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
+      <i class="fas fa-bars text-white"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-slate-950 border-r border-slate-700 shadow-xl flex flex-col fixed md:relative inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+      <!-- Header -->
+      <div class="p-6 border-b border-slate-700">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-chart-line text-white font-bold text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">SMon</h1>
+            <p class="text-xs text-gray-400">SNMP Monitor</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-4 py-6 overflow-y-auto">
+        <div class="space-y-2">
+          <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium transition-all hover:shadow-lg">
+            <i class="fas fa-chart-area w-5"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/monitoring" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span>Bandwidth Monitor</span>
+          </a>
+          <a href="/devices" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-server w-5"></i>
+            <span>Devices</span>
+          </a>
+          <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-cog w-5"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-4 py-4 border-t border-slate-700">
+        <div class="text-xs text-gray-500 text-center">
+          <p>SNMP Monitor v2.0</p>
+          <p>Network Intelligence</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <!-- Top Header -->
+      <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-10">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Dashboard</h2>
+            <p class="text-gray-400 text-sm mt-1">Real-time SNMP Network Monitoring</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-400"><i class="fas fa-circle text-green-500 mr-2"></i>System Operational</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8">
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm font-medium">Active Devices</p>
+                <p class="text-3xl font-bold text-white mt-2"><%= Object.values(devices).filter(d => d.enabled).length %></p>
+              </div>
+              <i class="fas fa-server text-blue-500 text-4xl opacity-30"></i>
+            </div>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm font-medium">Total Interfaces</p>
+                <p class="text-3xl font-bold text-white mt-2"><%= interfaces.length %></p>
+              </div>
+              <i class="fas fa-network-wired text-green-500 text-4xl opacity-30"></i>
+            </div>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm font-medium">Polling Interval</p>
+                <p class="text-3xl font-bold text-white mt-2">5<span class="text-lg">min</span></p>
+              </div>
+              <i class="fas fa-clock text-purple-500 text-4xl opacity-30"></i>
+            </div>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm font-medium">Status</p>
+                <p class="text-3xl font-bold text-green-400 mt-2">Operational</p>
+              </div>
+              <i class="fas fa-check-circle text-green-500 text-4xl opacity-30"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Devices Overview -->
+          <div class="lg:col-span-2">
+            <!-- Device Cards -->
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg mb-8">
+              <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-server text-blue-500"></i>
+                Monitored Devices
+              </h3>
+              
+              <div class="space-y-3">
+                <% Object.entries(devices).forEach(([deviceId, device]) => { %>
+                  <a href="/monitoring?device=<%= deviceId %>" class="flex items-center justify-between p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all duration-200 cursor-pointer">
+                    <div>
+                      <p class="font-medium text-white"><%= device.name %></p>
+                      <p class="text-sm text-gray-400"><%= device.host %> • <%= device.selectedInterfaces ? device.selectedInterfaces.length : 0 %> interfaces selected</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-xs text-green-400 mb-1"><i class="fas fa-circle text-green-500 mr-1"></i>Online</p>
+                      <i class="fas fa-arrow-right text-gray-400 text-lg"></i>
+                    </div>
+                  </a>
+                <% }); %>
+              </div>
+            </div>
+
+            <!-- Selected Interfaces by Device -->
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+              <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-network-wired text-green-500"></i>
+                Selected Interfaces
+              </h3>
+              
+              <div class="space-y-6">
+                <% 
+                  let totalInterfaces = 0;
+                  Object.entries(devices).forEach(([deviceId, device]) => { 
+                    totalInterfaces += (device.selectedInterfaces ? device.selectedInterfaces.length : 0);
+                %>
+                  <div class="pb-6 border-b border-slate-700 last:border-b-0 last:pb-0">
+                    <p class="font-medium text-white mb-3 text-sm"><%= device.name %> <span class="text-xs text-gray-400">(<%= device.selectedInterfaces ? device.selectedInterfaces.length : 0 %>)</span></p>
+                    <div class="flex flex-wrap gap-2">
+                      <% if (device.selectedInterfaces && device.selectedInterfaces.length > 0) { %>
+                        <% device.selectedInterfaces.slice(0, 8).forEach(iface => { %>
+                          <span class="px-3 py-1 bg-slate-700 rounded-full text-xs text-gray-300 border border-slate-600">
+                            <i class="fas fa-check-circle text-green-400 mr-1"></i><%= typeof iface === 'string' ? iface : iface.name %>
+                          </span>
+                        <% }); %>
+                        <% if (device.selectedInterfaces.length > 8) { %>
+                          <span class="px-3 py-1 bg-slate-700 rounded-full text-xs text-gray-400 border border-slate-600">
+                            +<%= device.selectedInterfaces.length - 8 %> more
+                          </span>
+                        <% } %>
+                      <% } else { %>
+                        <span class="px-3 py-1 bg-slate-700 rounded-full text-xs text-gray-400 italic border border-slate-600">No interfaces</span>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar Info -->
+          <div class="space-y-6">
+            <!-- System Informations -->
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+              <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-info-circle text-blue-500"></i>
+                System Informations
+              </h3>
+              <div class="space-y-4 text-sm">
+                <!-- System Name -->
+                <div>
+                  <p class="text-gray-400">System Name</p>
+                  <p class="font-medium text-white">SNMP Monitor</p>
+                </div>
+
+                <!-- Version -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Version</p>
+                  <p class="font-medium text-white">v2.0</p>
+                </div>
+
+                <!-- Node.js Version -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Node.js Version</p>
+                  <p class="font-medium text-white" id="node-version">Loading...</p>
+                </div>
+
+                <!-- Platform -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Platform</p>
+                  <p class="font-medium text-white" id="platform">Loading...</p>
+                </div>
+
+                <!-- Memory Usage -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Memory Usage</p>
+                  <div class="mt-2">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                      <span id="memory-used">0 MB</span>
+                      <span id="memory-total">0 MB</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                      <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" id="memory-bar" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CPU Usage -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">CPU Usage</p>
+                  <div class="mt-2">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                      <span id="cpu-usage">0%</span>
+                      <span id="cpu-cores">0 cores</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                      <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300" id="cpu-bar" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- System Uptime -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">System Uptime</p>
+                  <p class="font-medium text-white" id="system-uptime">Loading...</p>
+                </div>
+
+                <!-- Database Status -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Database Status</p>
+                  <p class="font-medium text-green-400"><i class="fas fa-circle text-green-500 mr-2"></i>Connected</p>
+                </div>
+
+                <!-- Status -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Monitoring Status</p>
+                  <p class="font-medium text-green-400"><i class="fas fa-circle text-green-500 mr-2"></i>Operational</p>
+                </div>
+
+                <!-- Last Updated -->
+                <div class="border-t border-slate-700 pt-3">
+                  <p class="text-gray-400">Last Updated</p>
+                  <p class="font-medium text-white text-xs" id="last-update">-</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg">
+              <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-bolt text-yellow-500"></i>
+                Quick Actions
+              </h3>
+              <div class="space-y-2">
+                <a href="/monitoring" class="block w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg text-center text-sm font-medium transition-all duration-200">
+                  <i class="fas fa-chart-line mr-2"></i>View Bandwidth
+                </a>
+                <a href="/devices" class="block w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-center text-sm transition-all">
+                  <i class="fas fa-edit mr-2"></i>Manage Devices
+                </a>
+                <a href="/settings" class="block w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-center text-sm transition-all">
+                  <i class="fas fa-cog mr-2"></i>Settings
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Update last updated time
+    function updateLastUpdateTime() {
+      document.getElementById('last-update').textContent = new Date().toLocaleString();
+    }
+
+    // Update system information
+    function updateSystemInfo() {
+      // Get basic system info
+      fetch('/api/system-info')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('node-version').textContent = data.nodeVersion;
+          document.getElementById('platform').textContent = data.platform;
+          document.getElementById('system-uptime').textContent = data.uptime;
+          document.getElementById('cpu-cores').textContent = data.cpuCores + ' cores';
+
+          // Update memory
+          const memoryUsed = (data.memory.used / 1024 / 1024).toFixed(0);
+          const memoryTotal = (data.memory.total / 1024 / 1024).toFixed(0);
+          const memoryPercent = (data.memory.used / data.memory.total * 100).toFixed(1);
+
+          document.getElementById('memory-used').textContent = memoryUsed + ' MB';
+          document.getElementById('memory-total').textContent = memoryTotal + ' MB';
+          document.getElementById('memory-bar').style.width = memoryPercent + '%';
+
+          // Update CPU
+          document.getElementById('cpu-usage').textContent = data.cpuUsage + '%';
+          document.getElementById('cpu-bar').style.width = data.cpuUsage + '%';
+        })
+        .catch(err => {
+          console.error('Error fetching system info:', err);
+          // Fallback values
+          document.getElementById('node-version').textContent = 'Unknown';
+          document.getElementById('platform').textContent = 'Unknown';
+          document.getElementById('system-uptime').textContent = 'Unknown';
+          document.getElementById('cpu-cores').textContent = 'Unknown';
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const sidebar = document.getElementById('sidebar');
+      const mobileOverlay = document.getElementById('mobile-overlay');
+
+      // Mobile menu toggle
+      mobileMenuButton.addEventListener('click', function() {
+        sidebar.classList.toggle('-translate-x-full');
+        mobileOverlay.classList.toggle('hidden');
+      });
+
+      // Close sidebar when clicking overlay
+      mobileOverlay.addEventListener('click', function() {
+        sidebar.classList.add('-translate-x-full');
+        mobileOverlay.classList.add('hidden');
+      });
+
+      updateLastUpdateTime();
+      updateSystemInfo();
+
+      // Update every minute
+      setInterval(updateLastUpdateTime, 60000);
+      setInterval(updateSystemInfo, 30000); // Update system info every 30 seconds
+    });
+  </script>
+</body>
+</html>
