@@ -146,7 +146,7 @@
         </div>
 
         <!-- Charts Container -->
-        <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Charts will be loaded here -->
           <div class="col-span-full text-center py-12 text-gray-400">
             <i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i>
@@ -255,65 +255,70 @@
         container.innerHTML = '';
       }
       
-      const chartId = `chart-${interfaceName.replace(/\s+/g, '-')}`;
+      const chartIdRx = `chart-${interfaceName.replace(/\s+/g, '-')}-rx`;
+      const chartIdTx = `chart-${interfaceName.replace(/\s+/g, '-')}-tx`;
       
-      // Create card
-      const card = document.createElement('div');
-      card.className = 'bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg';
-      card.innerHTML = `
+      // Create RX card
+      const cardRx = document.createElement('div');
+      cardRx.className = 'bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg';
+      cardRx.innerHTML = `
         <div class="mb-4">
           <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <i class="fas fa-network-wired text-blue-400"></i>
-            ${interfaceName}
+            <i class="fas fa-arrow-down text-green-400"></i>
+            ${interfaceName} - RX (Download)
           </h3>
-          <p class="text-xs text-gray-400 mt-1">Bandwidth (Mbps) - RX/TX</p>
+          <p class="text-xs text-gray-400 mt-1">Incoming Bandwidth (Mbps)</p>
         </div>
-        <div class="relative" style="height: 300px;">
-          <canvas id="${chartId}"></canvas>
+        <div class="relative" style="height: 280px;">
+          <canvas id="${chartIdRx}"></canvas>
         </div>
       `;
-      container.appendChild(card);
+      container.appendChild(cardRx);
       
-      // Destroy old chart if exists
-      if (chartInstances[chartId]) {
-        chartInstances[chartId].destroy();
+      // Create TX card
+      const cardTx = document.createElement('div');
+      cardTx.className = 'bg-slate-800 rounded-lg border border-slate-700 p-6 shadow-lg';
+      cardTx.innerHTML = `
+        <div class="mb-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-arrow-up text-amber-400"></i>
+            ${interfaceName} - TX (Upload)
+          </h3>
+          <p class="text-xs text-gray-400 mt-1">Outgoing Bandwidth (Mbps)</p>
+        </div>
+        <div class="relative" style="height: 280px;">
+          <canvas id="${chartIdTx}"></canvas>
+        </div>
+      `;
+      container.appendChild(cardTx);
+      
+      // Destroy old charts if exist
+      if (chartInstances[chartIdRx]) {
+        chartInstances[chartIdRx].destroy();
+      }
+      if (chartInstances[chartIdTx]) {
+        chartInstances[chartIdTx].destroy();
       }
       
-      // Create chart with RX and TX datasets
-      const ctx = document.getElementById(chartId).getContext('2d');
-      chartInstances[chartId] = new Chart(ctx, {
+      // Create RX chart (green line)
+      const ctxRx = document.getElementById(chartIdRx).getContext('2d');
+      chartInstances[chartIdRx] = new Chart(ctxRx, {
         type: 'line',
         data: {
           datasets: [{
-            label: `${interfaceName} - RX (Download)`,
+            label: 'RX Bandwidth',
             data: rxData.map(d => ({
               x: new Date(d.time).getTime(),
               y: parseFloat(d.value)
             })),
-            borderColor: '#10b981', // Green for RX
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            borderWidth: 2,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            borderWidth: 3,
             fill: true,
-            tension: 0.4,
-            pointRadius: 3,
-            pointHoverRadius: 5,
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 6,
             pointBackgroundColor: '#10b981',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2
-          }, {
-            label: `${interfaceName} - TX (Upload)`,
-            data: txData.map(d => ({
-              x: new Date(d.time).getTime(),
-              y: parseFloat(d.value)
-            })),
-            borderColor: '#f59e0b', // Orange for TX
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-            pointBackgroundColor: '#f59e0b',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2
           }]
@@ -326,24 +331,24 @@
               display: false
             },
             tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: '#ffffff',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#10b981',
               bodyColor: '#ffffff',
-              borderColor: '#3b82f6',
-              borderWidth: 1,
+              borderColor: '#10b981',
+              borderWidth: 2,
               padding: 12,
               displayColors: false,
               callbacks: {
                 label: function(context) {
                   const value = context.parsed.y;
                   if (value >= 1) {
-                    return 'Bandwidth: ' + value.toFixed(2) + ' Mbps';
+                    return 'RX: ' + value.toFixed(2) + ' Mbps';
                   } else if (value >= 0.001) {
-                    return 'Bandwidth: ' + (value * 1000).toFixed(0) + ' Kbps';
+                    return 'RX: ' + (value * 1000).toFixed(2) + ' Kbps';
                   } else if (value >= 0.000001) {
-                    return 'Bandwidth: ' + (value * 1000000).toFixed(0) + ' bps';
+                    return 'RX: ' + (value * 1000000).toFixed(0) + ' bps';
                   } else {
-                    return 'Bandwidth: ' + value.toFixed(6) + ' Mbps';
+                    return 'RX: ' + value.toFixed(8) + ' Mbps';
                   }
                 },
                 title: function(context) {
@@ -383,15 +388,120 @@
               },
               ticks: {
                 color: '#94a3b8',
-                callback: function(value, index, values) {
+                callback: function(value) {
                   if (value >= 1) {
-                    return value.toFixed(2) + ' Mbps';
+                    return value.toFixed(1) + ' Mbps';
                   } else if (value >= 0.001) {
-                    return (value * 1000).toFixed(0) + ' Kbps';
+                    return (value * 1000).toFixed(1) + ' Kbps';
                   } else if (value >= 0.000001) {
                     return (value * 1000000).toFixed(0) + ' bps';
                   } else {
-                    return value.toFixed(6) + ' Mbps';
+                    return value.toFixed(8) + ' Mbps';
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Create TX chart (orange line)
+      const ctxTx = document.getElementById(chartIdTx).getContext('2d');
+      chartInstances[chartIdTx] = new Chart(ctxTx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'TX Bandwidth',
+            data: txData.map(d => ({
+              x: new Date(d.time).getTime(),
+              y: parseFloat(d.value)
+            })),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#f59e0b',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#f59e0b',
+              bodyColor: '#ffffff',
+              borderColor: '#f59e0b',
+              borderWidth: 2,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed.y;
+                  if (value >= 1) {
+                    return 'TX: ' + value.toFixed(2) + ' Mbps';
+                  } else if (value >= 0.001) {
+                    return 'TX: ' + (value * 1000).toFixed(2) + ' Kbps';
+                  } else if (value >= 0.000001) {
+                    return 'TX: ' + (value * 1000000).toFixed(0) + ' bps';
+                  } else {
+                    return 'TX: ' + value.toFixed(8) + ' Mbps';
+                  }
+                },
+                title: function(context) {
+                  if (context && context[0]) {
+                    return new Date(context[0].parsed.x).toLocaleString();
+                  }
+                  return '';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                displayFormats: {
+                  hour: 'MMM dd HH:mm',
+                  day: 'MMM dd',
+                  week: 'MMM dd'
+                }
+              },
+              grid: {
+                color: 'rgba(100, 116, 139, 0.2)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#94a3b8',
+                maxRotation: 45,
+                minRotation: 0
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(100, 116, 139, 0.2)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value) {
+                  if (value >= 1) {
+                    return value.toFixed(1) + ' Mbps';
+                  } else if (value >= 0.001) {
+                    return (value * 1000).toFixed(1) + ' Kbps';
+                  } else if (value >= 0.000001) {
+                    return (value * 1000000).toFixed(0) + ' bps';
+                  } else {
+                    return value.toFixed(8) + ' Mbps';
                   }
                 }
               }
