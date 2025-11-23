@@ -81,16 +81,34 @@
         <!-- Main Content -->
         <div class="flex-1 overflow-auto md:ml-0">
             <!-- Top Header -->
-            <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-20">
-                <div class="flex justify-between items-center">
+            <div class="bg-slate-950 border-b border-slate-700 px-4 md:px-8 py-4 sticky top-0 z-20">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-white">Ping Monitoring</h2>
                         <p class="text-gray-400 text-sm mt-1">Monitor Network Connectivity & Latency</p>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-right">
-                            <p class="text-sm text-gray-400"><i class="fas fa-circle text-green-500 mr-2"></i>Monitoring Active</p>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- System Stats -->
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <div class="flex items-center gap-2 bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700">
+                                <i class="fas fa-microchip text-blue-400"></i>
+                                <span class="text-white font-semibold" id="header-cpu">--%</span>
+                            </div>
+                            <div class="flex items-center gap-2 bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700">
+                                <i class="fas fa-memory text-green-400"></i>
+                                <span class="text-white font-semibold" id="header-memory">--</span>
+                            </div>
+                            <div class="flex items-center gap-2 bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700">
+                                <i class="fas fa-database text-purple-400"></i>
+                                <span class="text-green-400 font-semibold text-xs" id="header-db"><i class="fas fa-circle"></i></span>
+                            </div>
+                            <div class="flex items-center gap-2 bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700">
+                                <i class="fas fa-hdd text-orange-400"></i>
+                                <span class="text-white font-semibold" id="header-storage">--</span>
+                            </div>
                         </div>
+                        
                         <button onclick="showAddTargetModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl">
                             <i class="fas fa-plus mr-2"></i>Add Target
                         </button>
@@ -335,12 +353,37 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeCharts();
             startPingMonitoring();
+            updateHeaderStats();
+            
+            // Update header stats every 10 seconds
+            setInterval(updateHeaderStats, 10000);
             
             // Add event listener for time range filter
             document.getElementById('timeRangeFilter').addEventListener('change', function() {
                 refreshCharts();
             });
         });
+
+        function updateHeaderStats() {
+            fetch('/api/system-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (document.getElementById('header-cpu')) {
+                        document.getElementById('header-cpu').textContent = data.cpuUsage + '%';
+                    }
+                    if (document.getElementById('header-memory')) {
+                        const memUsedGB = (data.memory.used / 1024 / 1024 / 1024).toFixed(1);
+                        const memTotalGB = (data.memory.total / 1024 / 1024 / 1024).toFixed(1);
+                        document.getElementById('header-memory').textContent = `${memUsedGB}/${memTotalGB}GB`;
+                    }
+                    if (document.getElementById('header-storage') && data.storage) {
+                        const storageUsedGB = (data.storage.used / 1024 / 1024 / 1024).toFixed(1);
+                        const storageTotalGB = (data.storage.total / 1024 / 1024 / 1024).toFixed(1);
+                        document.getElementById('header-storage').textContent = `${storageUsedGB}/${storageTotalGB}GB`;
+                    }
+                })
+                .catch(err => console.error('Error fetching system info:', err));
+        }
 
         function getTimeRangeFilter() {
             const filter = document.getElementById('timeRangeFilter').value;

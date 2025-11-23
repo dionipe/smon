@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bandwidth Monitoring - SMon</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -80,14 +81,43 @@
     <!-- Main Content -->
     <div class="flex-1 overflow-auto md:ml-0">
       <!-- Top Header -->
-      <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-20">
-        <div class="flex justify-between items-center">
+      <div class="bg-slate-950 border-b border-slate-700 px-4 md:px-8 py-4 sticky top-0 z-20">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 class="text-2xl font-bold text-white">Bandwidth Monitoring</h2>
             <p class="text-gray-400 text-sm mt-1">Real-time Interface Performance & Analysis</p>
           </div>
-          <div class="text-right">
-            <p class="text-sm text-gray-400"><i class="fas fa-circle text-green-500 mr-2"></i>Auto-Refresh: 1 min</p>
+          
+          <!-- System Stats -->
+          <div class="flex flex-wrap gap-3 text-xs">
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-microchip text-blue-400"></i>
+              <div>
+                <p class="text-gray-400">CPU</p>
+                <p class="text-white font-semibold" id="header-cpu">--%</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-memory text-green-400"></i>
+              <div>
+                <p class="text-gray-400">Memory</p>
+                <p class="text-white font-semibold" id="header-memory">--</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-database text-purple-400"></i>
+              <div>
+                <p class="text-gray-400">Database</p>
+                <p class="text-green-400 font-semibold" id="header-db"><i class="fas fa-circle text-xs"></i> Online</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-hdd text-orange-400"></i>
+              <div>
+                <p class="text-gray-400">Storage</p>
+                <p class="text-white font-semibold" id="header-storage">--</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -424,7 +454,9 @@
                 },
                 title: function(context) {
                   if (context && context[0]) {
-                    return new Date(context[0].parsed.x).toLocaleString();
+                    const date = new Date(context[0].parsed.x);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + 
+                           date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                   }
                   return '';
                 }
@@ -436,10 +468,12 @@
               type: 'time',
               time: {
                 displayFormats: {
+                  minute: 'HH:mm',
                   hour: 'MMM dd HH:mm',
                   day: 'MMM dd',
                   week: 'MMM dd'
-                }
+                },
+                tooltipFormat: 'MMM dd, yyyy HH:mm:ss'
               },
               grid: {
                 color: 'rgba(100, 116, 139, 0.2)',
@@ -530,7 +564,9 @@
                 },
                 title: function(context) {
                   if (context && context[0]) {
-                    return new Date(context[0].parsed.x).toLocaleString();
+                    const date = new Date(context[0].parsed.x);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + 
+                           date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                   }
                   return '';
                 }
@@ -542,10 +578,12 @@
               type: 'time',
               time: {
                 displayFormats: {
+                  minute: 'HH:mm',
                   hour: 'MMM dd HH:mm',
                   day: 'MMM dd',
                   week: 'MMM dd'
-                }
+                },
+                tooltipFormat: 'MMM dd, yyyy HH:mm:ss'
               },
               grid: {
                 color: 'rgba(100, 116, 139, 0.2)',
@@ -669,7 +707,7 @@
             if (hasRxData || hasTxData) {
               createInterfaceChart(ifaceName, rxData, txData);
             } else {
-              console.log(`Skipping chart for ${ifaceName} - no traffic data`);
+              // Skipping chart - no traffic data for this interface
             }
             completed++;
             
@@ -721,6 +759,32 @@
         container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-400"><i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i><p>Select device and click "Load Data" to display bandwidth charts</p></div>';
       }
     }
+
+    // Update header system stats
+    function updateHeaderStats() {
+      fetch('/api/system-info')
+        .then(response => response.json())
+        .then(data => {
+          if (document.getElementById('header-cpu')) {
+            document.getElementById('header-cpu').textContent = data.cpuUsage + '%';
+          }
+          if (document.getElementById('header-memory')) {
+            const memUsedGB = (data.memory.used / 1024 / 1024 / 1024).toFixed(1);
+            const memTotalGB = (data.memory.total / 1024 / 1024 / 1024).toFixed(1);
+            document.getElementById('header-memory').textContent = `${memUsedGB}/${memTotalGB}GB`;
+          }
+          if (document.getElementById('header-storage') && data.storage) {
+            const storageUsedGB = (data.storage.used / 1024 / 1024 / 1024).toFixed(1);
+            const storageTotalGB = (data.storage.total / 1024 / 1024 / 1024).toFixed(1);
+            document.getElementById('header-storage').textContent = `${storageUsedGB}/${storageTotalGB}GB`;
+          }
+        })
+        .catch(err => console.error('Error fetching system info:', err));
+    }
+
+    // Initial update and periodic refresh
+    updateHeaderStats();
+    setInterval(updateHeaderStats, 10000); // Update every 10 seconds
 
     // Auto-refresh every 1 minute
     setInterval(loadChartData, 60000);

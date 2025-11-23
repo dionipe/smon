@@ -937,7 +937,7 @@ app.get('/api/data', async (req, res) => {
     }
 
     let query = `
-      from(bucket: "${bucket}")
+      from(bucket: "${settings.influxdb.bucket}")
       |> range(start: ${rangeStart}${rangeStop})
       |> filter(fn: (r) => r._measurement == "snmp_metric")
       |> filter(fn: (r) => r._field == "value")
@@ -1052,7 +1052,7 @@ function pollSNMP() {
           } else {
             const rxValue = rxVarbinds[0].value;
             try {
-              const writeApi = client.getWriteApi(org, bucket);
+              const writeApi = client.getWriteApi(settings.influxdb.org, settings.influxdb.bucket);
               const rxPoint = new Point('snmp_metric')
                 .tag('device', deviceId)
                 .tag('device_name', device.name)
@@ -1081,7 +1081,7 @@ function pollSNMP() {
           } else {
             const txValue = txVarbinds[0].value;
             try {
-              const writeApi = client.getWriteApi(org, bucket);
+              const writeApi = client.getWriteApi(settings.influxdb.org, settings.influxdb.bucket);
               const txPoint = new Point('snmp_metric')
                 .tag('device', deviceId)
                 .tag('device_name', device.name)
@@ -1117,13 +1117,13 @@ function cleanupOldData() {
     
     // Delete data older than retention period
     const deleteQuery = `
-      from(bucket: "${bucket}")
+      from(bucket: "${settings.influxdb.bucket}")
         |> range(start: 1970-01-01T00:00:00Z, stop: ${cutoffIso})
         |> delete()
     `;
     
     const deleteApi = client.getDeleteApi();
-    deleteApi.delete(cutoffTime.getTime(), new Date().getTime(), `_measurement="snmp_metric"`, bucket, org);
+    deleteApi.delete(cutoffTime.getTime(), new Date().getTime(), `_measurement="snmp_metric"`, settings.influxdb.bucket, settings.influxdb.org);
     
     console.log(`\n[DATA RETENTION] Cleanup executed - Removed data older than ${retentionDays} days (cutoff: ${cutoffIso})\n`);
   } catch (err) {
@@ -1214,6 +1214,22 @@ app.get('/api/system-info', (req, res) => {
   // Get platform info
   const platform = os.platform() + ' ' + os.arch();
   
+  // Get storage info (disk usage)
+  let storageInfo = { total: 0, used: 0, free: 0, percent: 0 };
+  try {
+    const { execSync } = require('child_process');
+    const dfOutput = execSync('df -B1 / | tail -1').toString();
+    const parts = dfOutput.split(/\s+/);
+    if (parts.length >= 5) {
+      storageInfo.total = parseInt(parts[1]);
+      storageInfo.used = parseInt(parts[2]);
+      storageInfo.free = parseInt(parts[3]);
+      storageInfo.percent = parseInt(parts[4].replace('%', ''));
+    }
+  } catch (err) {
+    console.error('Error getting storage info:', err);
+  }
+  
   res.json({
     nodeVersion: process.version,
     platform: platform,
@@ -1224,7 +1240,8 @@ app.get('/api/system-info', (req, res) => {
       free: freeMemory
     },
     cpuCores: cpuCount,
-    cpuUsage: Math.max(0, Math.min(100, cpuUsage)) // Ensure between 0-100
+    cpuUsage: Math.max(0, Math.min(100, cpuUsage)), // Ensure between 0-100
+    storage: storageInfo
   });
 });
 

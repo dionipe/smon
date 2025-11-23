@@ -78,14 +78,43 @@
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
       <!-- Top Header -->
-      <div class="bg-slate-950 border-b border-slate-700 px-8 py-4 sticky top-0 z-10">
-        <div class="flex justify-between items-center">
+      <div class="bg-slate-950 border-b border-slate-700 px-4 md:px-8 py-4 sticky top-0 z-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 class="text-2xl font-bold text-white">Dashboard</h2>
             <p class="text-gray-400 text-sm mt-1">Real-time SNMP Network Monitoring</p>
           </div>
-          <div class="text-right">
-            <p class="text-sm text-gray-400"><i class="fas fa-circle text-green-500 mr-2"></i>System Operational</p>
+          
+          <!-- System Stats -->
+          <div class="flex flex-wrap gap-3 text-xs">
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-microchip text-blue-400"></i>
+              <div>
+                <p class="text-gray-400">CPU</p>
+                <p class="text-white font-semibold" id="header-cpu">--%</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-memory text-green-400"></i>
+              <div>
+                <p class="text-gray-400">Memory</p>
+                <p class="text-white font-semibold" id="header-memory">--</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-database text-purple-400"></i>
+              <div>
+                <p class="text-gray-400">Database</p>
+                <p class="text-green-400 font-semibold" id="header-db"><i class="fas fa-circle text-xs"></i> Online</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+              <i class="fas fa-hdd text-orange-400"></i>
+              <div>
+                <p class="text-gray-400">Storage</p>
+                <p class="text-white font-semibold" id="header-storage">--</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -468,6 +497,7 @@
       fetch('/api/system-info')
         .then(response => response.json())
         .then(data => {
+          // Update sidebar system info
           document.getElementById('node-version').textContent = data.nodeVersion;
           document.getElementById('platform').textContent = data.platform;
           document.getElementById('system-uptime').textContent = data.uptime;
@@ -479,6 +509,31 @@
           const memoryPercent = (data.memory.used / data.memory.total * 100).toFixed(1);
 
           document.getElementById('memory-used').textContent = memoryUsed + ' MB';
+          document.getElementById('memory-total').textContent = memoryTotal + ' MB';
+          document.getElementById('memory-bar').style.width = memoryPercent + '%';
+
+          // Update CPU
+          document.getElementById('cpu-usage').textContent = data.cpuUsage + '%';
+          document.getElementById('cpu-bar').style.width = data.cpuUsage + '%';
+          
+          // Update header stats
+          if (document.getElementById('header-cpu')) {
+            document.getElementById('header-cpu').textContent = data.cpuUsage + '%';
+          }
+          if (document.getElementById('header-memory')) {
+            const memUsedGB = (data.memory.used / 1024 / 1024 / 1024).toFixed(1);
+            const memTotalGB = (data.memory.total / 1024 / 1024 / 1024).toFixed(1);
+            document.getElementById('header-memory').textContent = `${memUsedGB}/${memTotalGB}GB`;
+          }
+          if (document.getElementById('header-storage') && data.storage) {
+            const storageUsedGB = (data.storage.used / 1024 / 1024 / 1024).toFixed(1);
+            const storageTotalGB = (data.storage.total / 1024 / 1024 / 1024).toFixed(1);
+            document.getElementById('header-storage').textContent = `${storageUsedGB}/${storageTotalGB}GB`;
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching system info:', err);
+          // Fallback values
           document.getElementById('memory-total').textContent = memoryTotal + ' MB';
           document.getElementById('memory-bar').style.width = memoryPercent + '%';
 

@@ -8,15 +8,51 @@
 
 ## ✨ Fitur Utama
 
-- 🔍 **Real-time Bandwidth Monitoring** - Pantau traffic RX/TX secara real-time
-- 🖥️ **Ping Monitoring** - Monitor konektivitas jaringan dengan interval yang dapat dikonfigurasi
+### Monitoring & Analytics
+- 🔍 **Real-time Bandwidth Monitoring** - Pantau traffic RX/TX secara real-time dengan grafik interaktif
+- 🎯 **Ping Monitoring** - Monitor konektivitas jaringan dengan:
+  - Latency tracking & packet loss monitoring
+  - Grouped target management
+  - Historical data dengan time range filter (1h, 6h, 24h, 7d, 30d)
+  - Smart notifications (offline, timeout, high latency)
+  - Auto-ping dengan interval yang dapat dikonfigurasi (5-300 detik)
 - 🖥️ **Multi-Device Support** - Monitor multiple network devices simultaneously
-- 📱 **Responsive Design** - Akses dari desktop dan mobile device
-- 📊 **Advanced Analytics** - Visualisasi data dengan Chart.js
-- ⚙️ **Configurable Settings** - Interval polling yang dapat dikonfigurasi
+- 📊 **Advanced Analytics** - Visualisasi data dengan Chart.js dan Luxon time adapter
+
+### Dashboard & Interface
+- 📱 **Responsive Design** - Akses dari desktop dan mobile device dengan adaptive layout
+- 🎨 **Modern Dark UI** - Interface dengan dark theme yang elegan menggunakan Tailwind CSS
+- 📈 **Unified Dashboard** - Dashboard utama dengan:
+  - Real-time ping monitoring status
+  - Quick stats (Active Devices, Interfaces, Ping Targets)
+  - System resource monitoring (CPU, Memory, Database, Storage)
+  - Grouped ping targets dengan status indicators
+
+### System Management
+- ⚙️ **Comprehensive Settings** - Konfigurasi sistem lengkap:
+  - InfluxDB v2 configuration (URL, Org, Bucket, Token)
+  - Test connection sebelum save
+  - Polling interval management
+  - Ping notification settings dengan threshold konfigurasi
+  - Data retention policy (1-365 hari)
 - 🔐 **Authentication System** - Sistem login dengan session management
-- 📈 **InfluxDB Integration** - Time-series database untuk penyimpanan data
-- 🎨 **Modern UI** - Interface dengan dark theme yang elegan
+- 📈 **InfluxDB v2 Integration** - Time-series database untuk penyimpanan data historis
+- 💾 **Data Persistence** - Ping history storage dengan 1-month retention dan automatic cleanup
+
+### Notifications & Alerts
+- 🔔 **Smart Notifications** - Notifikasi otomatis untuk:
+  - Target offline/down
+  - Ping timeout
+  - High latency (threshold configurable 10-500ms)
+  - Toast notifications dengan color coding
+
+### Header System Stats
+- 💻 **Real-time System Monitoring** - Header setiap halaman menampilkan:
+  - CPU usage percentage
+  - Memory usage (used/total GB)
+  - Database status (online/offline)
+  - Storage disk usage (used/total GB)
+  - Auto-refresh setiap 10 detik
 
 ## 🚀 Quick Start
 
