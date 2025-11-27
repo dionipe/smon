@@ -17,81 +17,44 @@
       "selectedInterfaces": []
     },
     {
-      "id": "distri-ipe",
-      "name": "Distribusi Router Ipe",
-      "host": "172.16.27.2",
+      "id": "core-ipe",
+      "name": "Core Router Updated",
+      "host": "172.16.27.1",
       "community": "public",
-      "vendor": "mikrotik",
       "enabled": true,
       "selectedInterfaces": [
         {
-          "index": 1,
+          "index": 106,
           "name": "ether1"
         },
         {
-          "index": 2,
-          "name": "ether2"
-        },
-        {
-          "index": 3,
-          "name": "ether3"
-        },
-        {
-          "index": 4,
+          "index": 6,
           "name": "ether4"
         },
         {
-          "index": 6,
-          "name": "ether6"
+          "index": 4,
+          "name": "ether7"
         },
         {
-          "index": 10,
-          "name": "ether10"
+          "index": 60,
+          "name": "indobsd"
         },
         {
-          "index": 11,
-          "name": "ether11"
+          "index": 104,
+          "name": "br2-wifi"
         },
         {
-          "index": 12,
-          "name": "ether12"
-        },
-        {
-          "index": 14,
-          "name": "ether14"
-        },
-        {
-          "index": 19,
-          "name": "bridgeLocal01"
-        },
-        {
-          "index": 20,
-          "name": "bridgeLocal02"
-        },
-        {
-          "index": 22,
-          "name": "vlan-202"
-        },
-        {
-          "index": 25,
-          "name": "vlan-203"
-        },
-        {
-          "index": 26,
-          "name": "vlan-204"
-        },
-        {
-          "index": 31,
-          "name": "pppoe-test"
+          "index": 149,
+          "name": "IndoBSD-Biznet-pptp"
         }
-      ]
+      ],
+      "vendor": "standard"
     },
     {
-      "id": "core-idbsd-biz",
-      "name": "Core Indobsd <-> Biznet",
+      "id": "core-biznet",
+      "name": "Core-Biznet",
       "host": "103.142.215.254",
       "community": "public",
-      "vendor": "mikrotik",
       "enabled": true,
       "selectedInterfaces": [
         {
@@ -101,6 +64,10 @@
         {
           "index": 3,
           "name": "ether1"
+        },
+        {
+          "index": 4,
+          "name": "ether2"
         },
         {
           "index": 6,
@@ -122,52 +89,14 @@
           "index": 14,
           "name": "vlan-253"
         }
-      ]
+      ],
+      "vendor": "standard"
     },
     {
-      "id": "core-rumah",
-      "name": "Core Router Rumah",
-      "host": "172.16.27.1",
-      "community": "public",
-      "vendor": "mikrotik",
-      "enabled": true,
-      "selectedInterfaces": [
-        {
-          "index": 4,
-          "name": "ether7"
-        },
-        {
-          "index": 6,
-          "name": "ether4"
-        },
-        {
-          "index": 60,
-          "name": "indobsd"
-        },
-        {
-          "index": 103,
-          "name": "vlan12-indobsd1"
-        },
-        {
-          "index": 106,
-          "name": "ether1"
-        },
-        {
-          "index": 108,
-          "name": "ether3"
-        },
-        {
-          "index": 149,
-          "name": "IndoBSD-Biznet-pptp"
-        }
-      ]
-    },
-    {
-      "id": "core-idbsd-3d",
-      "name": "Core IndoBSD IDC3D",
+      "id": "core-idc",
+      "name": "Core IndoBSD IDC",
       "host": "103.142.214.254",
       "community": "public",
-      "vendor": "mikrotik",
       "enabled": true,
       "selectedInterfaces": [
         {
@@ -177,6 +106,14 @@
         {
           "index": 2,
           "name": "combo1"
+        },
+        {
+          "index": 11,
+          "name": "vlan12-public-vm2"
+        },
+        {
+          "index": 13,
+          "name": "vlan10-public-vm1"
         },
         {
           "index": 14,
@@ -190,14 +127,14 @@
           "index": 18,
           "name": "vlan-3357"
         }
-      ]
+      ],
+      "vendor": "standard"
     },
     {
-      "id": "disti-idbsd-biznet",
-      "name": "Distribusi IdBSD <-> Biznet",
+      "id": "distribusi-biznet-indobsd",
+      "name": "Distribusi IndoBSD - Biznet",
       "host": "103.142.215.250",
       "community": "public",
-      "vendor": "mikrotik",
       "enabled": true,
       "selectedInterfaces": [
         {
@@ -276,14 +213,14 @@
           "index": 31,
           "name": "vlan-223"
         }
-      ]
+      ],
+      "vendor": "standard"
     },
     {
-      "id": "disti-idbsd-3d",
-      "name": "Distribusi IndoBSD <-> IDC3D",
+      "id": "distri-idc3d-indobsd",
+      "name": "Distribusi IndoBSD IDC3D",
       "host": "103.142.214.250",
       "community": "public",
-      "vendor": "mikrotik",
       "enabled": true,
       "selectedInterfaces": [
         {
@@ -331,6 +268,10 @@
           "name": "ether12"
         },
         {
+          "index": 25,
+          "name": "sfp-sfpplus1"
+        },
+        {
           "index": 28,
           "name": "br0-mgmt"
         },
@@ -345,8 +286,13 @@
         {
           "index": 33,
           "name": "vlan12-public-vm2"
+        },
+        {
+          "index": 37,
+          "name": "vlan250-Zetoup"
         }
-      ]
+      ],
+      "vendor": "standard"
     }
   ]
 }
