@@ -16,9 +16,11 @@
     "express": "^4.18.2",
     "net-snmp": "^3.26.0",
     "node-telegram-bot-api": "^0.66.0",
+    "nodemailer": "^7.0.11",
     "ping": "^1.0.0",
     "pm2": "^6.0.13",
-    "snmp-native": "^1.2.0"
+    "snmp-native": "^1.2.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

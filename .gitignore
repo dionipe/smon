@@ -130,5 +130,5 @@ build/
 .env.production.local
 
 # config.json & setting.json
-setting.json
+settings.json
 config.json

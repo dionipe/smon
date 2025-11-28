@@ -49,7 +49,7 @@
       border-radius: 4px;
       border: 1px solid #6b7280;
     }
-
+    
     /* Status animations */
     @keyframes pulse-green {
       0%, 100% { opacity: 1; }
@@ -58,7 +58,7 @@
     .animate-pulse-green {
       animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-
+    
     /* Smooth transitions for all interactive elements */
     * {
       transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
@@ -111,10 +111,6 @@
             <i class="fas fa-server w-5 group-hover:scale-110 transition-transform duration-200"></i>
             <span>Devices</span>
           </a>
-          <a href="/history" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
-            <i class="fas fa-history w-5 group-hover:scale-110 transition-transform duration-200"></i>
-            <span>History</span>
-          </a>
           <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium transition-all hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] group">
             <i class="fas fa-cog w-5 group-hover:scale-110 transition-transform duration-200"></i>
             <span>Settings</span>
@@ -153,7 +149,7 @@
             </h2>
             <p class="text-gray-400 text-sm mt-1">Configure system parameters and monitoring options</p>
           </div>
-
+          
           <!-- System Stats -->
           <div class="flex flex-wrap gap-3 text-xs">
             <div class="flex items-center gap-2 bg-gradient-to-br from-slate-800 to-slate-900 px-3 py-2 rounded-xl border border-slate-700/50 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105 group">
@@ -256,7 +252,7 @@
                       <i class="fas fa-link text-purple-400 text-xs"></i>
                       Server URL
                     </label>
-                    <input type="text"
+                    <input type="text" 
                            id="influxdb-url"
                            value="<%= settings.influxdb?.url || '' %>"
                            placeholder="http://localhost:8086"
@@ -270,7 +266,7 @@
                       <i class="fas fa-building text-purple-400 text-xs"></i>
                       Organization
                     </label>
-                    <input type="text"
+                    <input type="text" 
                            id="influxdb-org"
                            value="<%= settings.influxdb?.org || '' %>"
                            placeholder="indobsd"
@@ -284,7 +280,7 @@
                       <i class="fas fa-archive text-purple-400 text-xs"></i>
                       Bucket
                     </label>
-                    <input type="text"
+                    <input type="text" 
                            id="influxdb-bucket"
                            value="<%= settings.influxdb?.bucket || '' %>"
                            placeholder="graphts"
@@ -299,7 +295,7 @@
                       API Token
                     </label>
                     <div class="relative">
-                      <input type="password"
+                      <input type="password" 
                              id="influxdb-token"
                              value="<%= settings.influxdb?.token || '' %>"
                              placeholder="Enter your InfluxDB API token"
@@ -359,10 +355,10 @@
                       SNMP Polling Interval
                     </label>
                     <div class="space-y-3">
-                      <input type="range"
+                      <input type="range" 
                              id="polling-interval-slider"
-                             min="30"
-                             max="1800"
+                             min="30" 
+                             max="1800" 
                              step="30"
                              value="<%= settings.pollingInterval / 1000 %>"
                              class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider">
@@ -382,10 +378,10 @@
                       Ping Monitoring Interval
                     </label>
                     <div class="space-y-3">
-                      <input type="range"
+                      <input type="range" 
                              id="ping-interval-slider"
-                             min="5"
-                             max="300"
+                             min="5" 
+                             max="300" 
                              step="5"
                              value="<%= settings.pingInterval / 1000 %>"
                              class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider">
@@ -405,20 +401,20 @@
                       Data Retention Period
                     </label>
                     <div class="space-y-3">
-                      <input type="range"
+                      <input type="range" 
                              id="retention-slider"
-                             min="7"
-                             max="730"
+                             min="7" 
+                             max="365" 
                              step="7"
-                             value="<%= settings.dataRetention || 730 %>"
+                             value="<%= settings.dataRetention || 365 %>"
                              class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider">
                       <div class="flex justify-between text-xs text-gray-400">
                         <span>1 week</span>
-                        <span id="retention-current-value" class="font-medium text-blue-400"><%= settings.dataRetention || 730 %> days</span>
-                        <span>2 years</span>
+                        <span id="retention-current-value" class="font-medium text-blue-400"><%= settings.dataRetention || 365 %> days</span>
+                        <span>1 year</span>
                       </div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">How long to keep historical data (7 days - 2 years)</p>
+                    <p class="text-xs text-gray-500 mt-2">How long to keep historical data (7 days - 1 year)</p>
                   </div>
 
                   <!-- Save Button -->
@@ -531,9 +527,9 @@
                       Latency Threshold
                     </label>
                     <div class="flex gap-3">
-                      <input type="number"
+                      <input type="number" 
                              id="ping-latency-threshold"
-                             min="10"
+                             min="10" 
                              step="5"
                              value="<%= settings.pingNotifications?.latencyThreshold || 50 %>"
                              class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-center">
@@ -595,7 +591,7 @@
                         <i class="fas fa-robot text-blue-400 text-xs"></i>
                         Bot Token
                       </label>
-                      <input type="password"
+                      <input type="password" 
                              id="telegram-bot-token"
                              value="<%= settings.telegram?.botToken || '' %>"
                              placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz..."
@@ -608,7 +604,7 @@
                         <i class="fas fa-comment text-blue-400 text-xs"></i>
                         Chat ID
                       </label>
-                      <input type="text"
+                      <input type="text" 
                              id="telegram-chat-id"
                              value="<%= settings.telegram?.chatId || '' %>"
                              placeholder="-123456789"
@@ -623,7 +619,7 @@
                       <i class="fas fa-server text-blue-400 text-xs"></i>
                       Device Monitoring
                     </h4>
-
+                    
                     <div class="grid grid-cols-1 gap-2">
                       <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3 hover:bg-slate-700/50 transition-colors duration-200">
                         <div class="flex items-center gap-3">
@@ -675,7 +671,7 @@
                       <i class="fas fa-network-wired text-blue-400 text-xs"></i>
                       Network Monitoring
                     </h4>
-
+                    
                     <div class="grid grid-cols-1 gap-2">
                       <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3 hover:bg-slate-700/50 transition-colors duration-200">
                         <div class="flex items-center gap-3">
@@ -743,9 +739,9 @@
                         CPU Alert Threshold
                       </label>
                       <div class="flex gap-3">
-                        <input type="number"
+                        <input type="number" 
                                id="telegram-cpu-threshold"
-                               min="1"
+                               min="1" 
                                max="100"
                                value="<%= settings.telegram?.cpuThreshold || 80 %>"
                                class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
@@ -759,9 +755,9 @@
                         Ping Latency Threshold
                       </label>
                       <div class="flex gap-3">
-                        <input type="number"
+                        <input type="number" 
                                id="telegram-ping-latency-threshold"
-                               min="10"
+                               min="10" 
                                step="5"
                                value="<%= settings.telegram?.pingLatencyThreshold || 50 %>"
                                class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
@@ -779,460 +775,6 @@
                     <button id="test-telegram-btn" class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 flex items-center justify-center gap-2">
                       <i class="fas fa-paper-plane"></i>
                       <span>Test</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Email Settings Section -->
-          <div class="space-y-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
-                <i class="fas fa-envelope text-white text-sm"></i>
-              </div>
-              <h2 class="text-xl font-bold text-white">Email Notifications</h2>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <!-- SMTP Configuration -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-cog text-white text-sm"></i>
-                  </div>
-                  SMTP Configuration
-                </h3>
-
-                <div class="space-y-4">
-                  <div class="grid grid-cols-1 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">SMTP Host</label>
-                      <input type="text"
-                             id="email-smtp-host"
-                             value="<%= settings.email?.smtp?.host || '' %>"
-                             placeholder="smtp.gmail.com"
-                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">SMTP Port</label>
-                        <input type="number"
-                               id="email-smtp-port"
-                               value="<%= settings.email?.smtp?.port || 587 %>"
-                               min="1"
-                               max="65535"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      </div>
-
-                      <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Security</label>
-                        <select id="email-smtp-secure" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="false" <%= settings.email?.smtp?.secure === false ? 'selected' : '' %>>STARTTLS</option>
-                          <option value="true" <%= settings.email?.smtp?.secure === true ? 'selected' : '' %>>SSL/TLS</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                      <input type="text"
-                             id="email-smtp-user"
-                             value="<%= settings.email?.smtp?.user || '' %>"
-                             placeholder="your-email@gmail.com"
-                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                      <input type="password"
-                             id="email-smtp-pass"
-                             value="<%= settings.email?.smtp?.pass || '' %>"
-                             placeholder="App password or SMTP password"
-                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">From Email</label>
-                      <input type="email"
-                             id="email-from"
-                             value="<%= settings.email?.from || '' %>"
-                             placeholder="alerts@yourdomain.com"
-                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">To Email</label>
-                      <input type="email"
-                             id="email-to"
-                             value="<%= settings.email?.to || '' %>"
-                             placeholder="admin@yourdomain.com"
-                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Email Notification Preferences -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-bell text-white text-sm"></i>
-                  </div>
-                  Notification Preferences
-                </h3>
-
-                <div class="space-y-4">
-                  <!-- Device Status Notifications -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <i class="fas fa-server text-blue-400 text-xs"></i>
-                      Device Status Alerts
-                    </h4>
-                    <div class="space-y-3">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                          <i class="fas fa-arrow-up text-green-400"></i>
-                          <div>
-                            <p class="text-sm font-medium text-white">Device Up</p>
-                            <p class="text-xs text-gray-400">Alert when device comes online</p>
-                          </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id="email-notify-device-up" class="sr-only peer" <%= settings.email?.notifyOnDeviceUp ? 'checked' : '' %>>
-                          <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                          <i class="fas fa-arrow-down text-red-400"></i>
-                          <div>
-                            <p class="text-sm font-medium text-white">Device Down</p>
-                            <p class="text-xs text-gray-400">Alert when device goes offline</p>
-                          </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id="email-notify-device-down" class="sr-only peer" <%= settings.email?.notifyOnDeviceDown ? 'checked' : '' %>>
-                          <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- CPU Usage Notifications -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <i class="fas fa-microchip text-yellow-400 text-xs"></i>
-                      CPU Usage Alerts
-                    </h4>
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <i class="fas fa-exclamation-triangle text-orange-400"></i>
-                        <div>
-                          <p class="text-sm font-medium text-white">High CPU Usage</p>
-                          <p class="text-xs text-gray-400">Alert when CPU exceeds threshold</p>
-                        </div>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="email-notify-high-cpu" class="sr-only peer" <%= settings.email?.notifyOnHighCpu ? 'checked' : '' %>>
-                        <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Ping Notifications -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <i class="fas fa-network-wired text-purple-400 text-xs"></i>
-                      Ping Status Alerts
-                    </h4>
-                    <div class="space-y-3">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                          <i class="fas fa-check-circle text-green-400"></i>
-                          <div>
-                            <p class="text-sm font-medium text-white">Ping Up</p>
-                            <p class="text-xs text-gray-400">Alert when ping responds</p>
-                          </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id="email-notify-ping-up" class="sr-only peer" <%= settings.email?.notifyOnPingUp ? 'checked' : '' %>>
-                          <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                          <i class="fas fa-clock text-orange-400"></i>
-                          <div>
-                            <p class="text-sm font-medium text-white">Ping Timeout</p>
-                            <p class="text-xs text-gray-400">Alert when ping requests timeout</p>
-                          </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id="email-notify-ping-timeout" class="sr-only peer" <%= settings.email?.notifyOnPingTimeout ? 'checked' : '' %>>
-                          <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                          <i class="fas fa-tachometer-alt text-yellow-400"></i>
-                          <div>
-                            <p class="text-sm font-medium text-white">High Ping Latency</p>
-                            <p class="text-xs text-gray-400">Alert when latency exceeds threshold</p>
-                          </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id="email-notify-ping-high-latency" class="sr-only peer" <%= settings.email?.notifyOnPingHighLatency ? 'checked' : '' %>>
-                          <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Thresholds and Actions -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <!-- Thresholds -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-sliders-h text-white text-sm"></i>
-                  </div>
-                  Alert Thresholds
-                </h3>
-
-                <div class="space-y-4">
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                      <i class="fas fa-microchip text-blue-400 text-xs"></i>
-                      CPU Alert Threshold
-                    </label>
-                    <div class="flex gap-3">
-                      <input type="number"
-                             id="email-cpu-threshold"
-                             min="1"
-                             max="100"
-                             value="<%= settings.email?.cpuThreshold || 80 %>"
-                             class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
-                      <span class="flex items-center text-gray-400 font-medium">%</span>
-                    </div>
-                  </div>
-
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                      <i class="fas fa-stopwatch text-blue-400 text-xs"></i>
-                      Ping Latency Threshold
-                    </label>
-                    <div class="flex gap-3">
-                      <input type="number"
-                             id="email-ping-latency-threshold"
-                             min="10"
-                             step="5"
-                             value="<%= settings.email?.pingLatencyThreshold || 50 %>"
-                             class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
-                      <span class="flex items-center text-gray-400 font-medium">ms</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-play text-white text-sm"></i>
-                  </div>
-                  Actions
-                </h3>
-
-                <div class="space-y-4">
-                  <button id="save-email-btn" class="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 flex items-center justify-center gap-2">
-                    <i class="fas fa-save"></i>
-                    <span>Save Email Settings</span>
-                  </button>
-                  <button id="test-email-btn" class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 flex items-center justify-center gap-2">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>Test Email</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Flapping Detection Section -->
-          <div class="space-y-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-              </div>
-              <h2 class="text-xl font-bold text-white">Flapping Detection</h2>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <!-- Flapping Configuration -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-cog text-white text-sm"></i>
-                  </div>
-                  Detection Settings
-                </h3>
-
-                <div class="space-y-4">
-                  <!-- Enable Flapping Detection -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <i class="fas fa-toggle-on text-blue-400"></i>
-                        <div>
-                          <p class="text-sm font-medium text-white">Enable Flapping Detection</p>
-                          <p class="text-xs text-gray-400">Detect and handle unstable devices/targets</p>
-                        </div>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="flapping-enabled" class="sr-only peer" <%= settings.flapping?.enabled ? 'checked' : '' %>>
-                        <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Device Flapping Thresholds -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <i class="fas fa-server text-blue-400 text-xs"></i>
-                      Device Flapping
-                    </h4>
-                    <div class="grid grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Transitions</label>
-                        <input type="number"
-                               id="flapping-device-threshold"
-                               min="2"
-                               max="20"
-                               value="<%= settings.flapping?.deviceThreshold || 5 %>"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Window (min)</label>
-                        <input type="number"
-                               id="flapping-device-window"
-                               min="1"
-                               max="60"
-                               value="<%= settings.flapping?.deviceWindowMinutes || 10 %>"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm">
-                      </div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">Alert if device changes state more than threshold times within window</p>
-                  </div>
-
-                  <!-- Ping Flapping Thresholds -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <i class="fas fa-network-wired text-green-400 text-xs"></i>
-                      Ping Flapping
-                    </h4>
-                    <div class="grid grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Transitions</label>
-                        <input type="number"
-                               id="flapping-ping-threshold"
-                               min="2"
-                               max="20"
-                               value="<%= settings.flapping?.pingThreshold || 3 %>"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Window (min)</label>
-                        <input type="number"
-                               id="flapping-ping-window"
-                               min="1"
-                               max="60"
-                               value="<%= settings.flapping?.pingWindowMinutes || 5 %>"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm">
-                      </div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">Alert if ping target changes state more than threshold times within window</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Flapping Actions -->
-              <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-                  <div class="w-6 h-6 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-bell text-white text-sm"></i>
-                  </div>
-                  Notification Actions
-                </h3>
-
-                <div class="space-y-4">
-                  <!-- Suppress Notifications -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <i class="fas fa-volume-mute text-orange-400"></i>
-                        <div>
-                          <p class="text-sm font-medium text-white">Suppress Notifications</p>
-                          <p class="text-xs text-gray-400">Stop alerts when flapping is detected</p>
-                        </div>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="flapping-suppress-notifications" class="sr-only peer" <%= settings.flapping?.suppressNotifications ? 'checked' : '' %>>
-                        <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Flapping Start Alerts -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <i class="fas fa-exclamation-triangle text-red-400"></i>
-                        <div>
-                          <p class="text-sm font-medium text-white">Alert on Flapping Start</p>
-                          <p class="text-xs text-gray-400">Notify when flapping begins</p>
-                        </div>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="flapping-notify-start" class="sr-only peer" <%= settings.flapping?.notifyOnFlappingStart ? 'checked' : '' %>>
-                        <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Flapping Stop Alerts -->
-                  <div class="bg-slate-700/30 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <i class="fas fa-check-circle text-green-400"></i>
-                        <div>
-                          <p class="text-sm font-medium text-white">Alert on Flapping Stop</p>
-                          <p class="text-xs text-gray-400">Notify when flapping ends</p>
-                        </div>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="flapping-notify-stop" class="sr-only peer" <%= settings.flapping?.notifyOnFlappingStop ? 'checked' : '' %>>
-                        <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons -->
-                  <div class="flex gap-3 pt-2">
-                    <button id="save-flapping-btn" class="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 flex items-center justify-center gap-2">
-                      <i class="fas fa-save"></i>
-                      <span>Save Settings</span>
-                    </button>
-                    <button id="view-flapping-status-btn" class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 flex items-center justify-center gap-2">
-                      <i class="fas fa-eye"></i>
-                      <span>View Status</span>
                     </button>
                   </div>
                 </div>
@@ -1304,7 +846,11 @@
                   </div>
                   <div class="flex items-center justify-between">
                     <span class="text-gray-400">Data Retention</span>
-                    <span class="text-blue-400 font-medium"><%= settings.dataRetention || 730 %> days</span>
+                    <span class="text-blue-400 font-medium"><%= settings.dataRetention || 365 %> days</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Active Devices</span>
+                    <span class="text-green-400 font-medium"><%= Object.keys(devices).length %></span>
                   </div>
                 </div>
               </div>
@@ -1339,70 +885,593 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+            </div>
 
-          <!-- Interface Selection for Graphing -->
+            <div class="space-y-4">
+              <!-- InfluxDB URL -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <div class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded inline-flex items-center justify-center mr-2">
+                    <i class="fas fa-link text-white text-xs"></i>
+                  </div>InfluxDB URL
+                </label>
+                <input type="text" 
+                       id="influxdb-url"
+                       value="<%= settings.influxdb?.url || 'http://localhost:8086' %>"
+                       placeholder="http://localhost:8086"
+                       class="w-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:border-slate-500/70">
+                <p class="text-xs text-gray-500 mt-1">Full URL to your InfluxDB instance</p>
+              </div>
+
+              <!-- Organization -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <div class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded inline-flex items-center justify-center mr-2">
+                    <i class="fas fa-building text-white text-xs"></i>
+                  </div>Organization
+                </label>
+                <input type="text" 
+                       id="influxdb-org"
+                       value="<%= settings.influxdb?.org || '' %>"
+                       placeholder="my-org"
+                       class="w-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:border-slate-500/70">
+                <p class="text-xs text-gray-500 mt-1">InfluxDB organization name</p>
+              </div>
+
+              <!-- Bucket -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <div class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded inline-flex items-center justify-center mr-2">
+                    <i class="fas fa-bucket text-white text-xs"></i>
+                  </div>Bucket
+                </label>
+                <input type="text" 
+                       id="influxdb-bucket"
+                       value="<%= settings.influxdb?.bucket || '' %>"
+                       placeholder="my-bucket"
+                       class="w-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:border-slate-500/70">
+                <p class="text-xs text-gray-500 mt-1">Bucket name for storing metrics</p>
+              </div>
+
+              <!-- Token -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <div class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded inline-flex items-center justify-center mr-2">
+                    <i class="fas fa-key text-white text-xs"></i>
+                  </div>API Token
+                </label>
+                <div class="relative">
+                  <input type="password" 
+                         id="influxdb-token"
+                         value="<%= settings.influxdb?.token || '' %>"
+                         placeholder="Enter your InfluxDB API token"
+                         class="w-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-xl px-4 py-3 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:border-slate-500/70">
+                  <button type="button" id="toggle-token-visibility" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-2 rounded-lg hover:bg-slate-700/50 transition-all duration-200 hover:scale-110">
+                    <i class="fas fa-eye" id="token-eye-icon"></i>
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">API token with read/write permissions</p>
+              </div>
+
+              <!-- Test Connection Button -->
+              <div class="flex gap-2">
+                <button id="test-influxdb-btn" class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105">
+                  <i class="fas fa-plug mr-2"></i>Test Connection
+                </button>
+                <button id="save-influxdb-btn" class="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all duration-300 font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 hover:scale-105">
+                  <i class="fas fa-save mr-2"></i>Save
+                </button>
+              </div>
+
+              <!-- Connection Status -->
+              <div id="influxdb-status" class="hidden p-3 rounded-lg">
+                <p id="influxdb-status-text" class="text-sm"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Polling Interval Setting -->
+          <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <div class="flex items-start justify-between mb-6">
+              <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-sync-alt text-white text-sm"></i>
+                  </div>
+                  Polling Interval
+                </h3>
+                <p class="text-gray-400 text-sm mt-2">Set how often SNMP data is collected from devices</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Current Setting Display -->
+              <div class="bg-slate-700/50 rounded-lg p-4">
+                <p class="text-xs text-gray-400 mb-1">Current Interval</p>
+                <div class="text-3xl font-bold text-blue-400" id="current-interval-display">
+                  <%= settings.pollingInterval / 1000 %> sec
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  (<%= (settings.pollingInterval / 60000).toFixed(1) %> minutes)
+                </p>
+              </div>
+
+              <!-- Input Section -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Interval (seconds)</label>
+                <div class="flex gap-2">
+                  <input type="number" 
+                         id="polling-interval-input" 
+                         min="10" 
+                         step="5"
+                         value="<%= settings.pollingInterval / 1000 %>"
+                         class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <button id="save-interval-btn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium">
+                    <i class="fas fa-check mr-2"></i>Save
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Minimum: 10 seconds | Recommended: 300 seconds (5 minutes)</p>
+              </div>
+
+              <!-- Preset Buttons -->
+              <div>
+                <p class="text-xs text-gray-400 mb-2">Quick Presets</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="30">
+                    30 seconds
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="60">
+                    1 minute
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="300">
+                    5 minutes
+                  </button>
+                  <button class="preset-btn px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-all" data-value="900">
+                    15 minutes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Information -->
           <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
             <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
-              <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-                <i class="fas fa-chart-line text-white text-sm"></i>
+              <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                <i class="fas fa-info-circle text-white text-sm"></i>
               </div>
-              Interface Selection for Graphing
+              System Information
             </h3>
 
             <div class="space-y-4">
-              <% Object.values(devices).forEach(device => { %>
-                <div class="bg-slate-700/50 rounded-lg p-4">
-                  <div class="flex items-center justify-between mb-3">
-                    <h5 class="font-semibold text-white flex items-center gap-2">
-                      <i class="fas fa-server text-blue-400"></i>
-                      <%= device.name %>
-                    </h5>
-                    <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                      <%= device.selectedInterfaces ? device.selectedInterfaces.length : 0 %> selected
-                    </span>
-                  </div>
-
-                  <% if (device.selectedInterfaces && device.selectedInterfaces.length > 0) { %>
-                    <div class="flex flex-wrap gap-2">
-                      <% device.selectedInterfaces.forEach(iface => { %>
-                        <%- typeof iface === 'string' ? `
-                          <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
-                            <input type="checkbox"
-                                   name="interface-${device.id}"
-                                   value="${iface}"
-                                   data-device="${device.id}"
-                                   class="interface-checkbox rounded"
-                                   checked>
-                            <span class="text-sm text-gray-200">${iface}</span>
-                          </label>
-                        ` : `
-                          <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
-                            <input type="checkbox"
-                                   name="interface-${device.id}"
-                                   value="${iface.name}"
-                                   data-device="${device.id}"
-                                   class="interface-checkbox rounded"
-                                   checked>
-                            <span class="text-sm text-gray-200">${iface.name}</span>
-                          </label>
-                        ` %>
-                      <% }); %>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-2">Check interfaces to include in graph monitoring</p>
-                  <% } else { %>
-                    <p class="text-xs text-gray-500">No interfaces selected for this device</p>
-                  <% } %>
+              <!-- Polling Info -->
+              <div class="border-b border-slate-700 pb-4">
+                <p class="text-gray-400 text-sm">Polling Status</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                  <p class="font-medium text-green-400">Active</p>
                 </div>
-              <% }); %>
-            </div>
+              </div>
 
-            <!-- Save Interface Selection Button -->
-            <div class="mt-4">
-              <button id="save-interfaces-btn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium">
-                <i class="fas fa-save mr-2"></i>Save Interface Selection
-              </button>
+              <!-- Interval Conversion -->
+              <div class="border-b border-slate-700 pb-4">
+                <p class="text-gray-400 text-sm">Interval Breakdown</p>
+                <div class="mt-2 space-y-1 text-sm">
+                  <p class="text-gray-300"><span class="text-gray-500">Seconds:</span> <span class="font-mono" id="info-seconds"><%= settings.pollingInterval / 1000 %></span></p>
+                  <p class="text-gray-300"><span class="text-gray-500">Minutes:</span> <span class="font-mono" id="info-minutes"><%= (settings.pollingInterval / 60000).toFixed(2) %></span></p>
+                  <p class="text-gray-300"><span class="text-gray-500">Polls/Hour:</span> <span class="font-mono" id="info-polls"><%= (3600 / (settings.pollingInterval / 1000)).toFixed(1) %></span></p>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div>
+                <p class="text-gray-400 text-sm">What is Polling?</p>
+                <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                  Polling is the process of periodically querying SNMP devices for network statistics. 
+                  Higher frequency = more data points but more network traffic. 
+                  Lower frequency = less traffic but fewer data points.
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Additional Settings Section -->
+        <div class="mt-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-6">
+            <div class="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
+              <i class="fas fa-sliders-h text-white text-sm"></i>
+            </div>
+            Advanced Settings
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Data Retention -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Data Retention Policy</label>
+              <div class="flex gap-2">
+                <input type="number" 
+                       id="data-retention-input"
+                       min="1" 
+                       max="365"
+                       step="1"
+                       value="<%= settings.dataRetention || 365 %>"
+                       class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="flex items-center text-gray-400">days</span>
+                <button id="save-retention-btn" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium text-sm">
+                  <i class="fas fa-check mr-1"></i>Save
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">How long to keep historical data (1-365 days)</p>
+            </div>
+
+            <!-- Alert Threshold -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">High Bandwidth Threshold</label>
+              <div class="flex gap-2">
+                <input type="number" 
+                       value="80" 
+                       min="0" 
+                       max="100"
+                       class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       disabled>
+                <span class="flex items-center text-gray-400">%</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Trigger alert when bandwidth exceeds</p>
+            </div>
+
+            <!-- Ping Interval -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Ping Monitoring Interval</label>
+              <div class="flex gap-2">
+                <input type="number" 
+                       id="ping-interval-input"
+                       min="5" 
+                       step="5"
+                       value="<%= settings.pingInterval ? settings.pingInterval / 1000 : 30 %>"
+                       class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="flex items-center text-gray-400">seconds</span>
+                <button id="save-ping-interval-btn" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium text-sm">
+                  <i class="fas fa-check mr-1"></i>Save
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">How often to ping network targets (5-300 seconds)</p>
+            </div>
+
+            <!-- Ping Notifications -->
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-gray-300 mb-2">Ping Notifications</label>
+              
+              <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fas fa-bell text-yellow-400"></i>
+                  <div>
+                    <p class="text-sm font-medium text-white">Enable Notifications</p>
+                    <p class="text-xs text-gray-400">Show alerts for ping failures</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ping-notifications-enabled" class="sr-only peer" <%= settings.pingNotifications?.enabled ? 'checked' : '' %>>
+                  <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fas fa-exclamation-triangle text-red-400"></i>
+                  <div>
+                    <p class="text-sm font-medium text-white">Notify on Down</p>
+                    <p class="text-xs text-gray-400">Alert when target is offline</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ping-notify-down" class="sr-only peer" <%= settings.pingNotifications?.notifyOnDown ? 'checked' : '' %>>
+                  <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fas fa-clock text-orange-400"></i>
+                  <div>
+                    <p class="text-sm font-medium text-white">Notify on Timeout</p>
+                    <p class="text-xs text-gray-400">Alert when ping times out</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ping-notify-timeout" class="sr-only peer" <%= settings.pingNotifications?.notifyOnTimeout ? 'checked' : '' %>>
+                  <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  <i class="fas fa-tachometer-alt text-yellow-400"></i>
+                  <div>
+                    <p class="text-sm font-medium text-white">Notify on High Latency</p>
+                    <p class="text-xs text-gray-400">Alert when latency exceeds threshold</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ping-notify-high-latency" class="sr-only peer" <%= settings.pingNotifications?.notifyOnHighLatency ? 'checked' : '' %>>
+                  <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div class="bg-slate-700/30 rounded-lg p-3">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Latency Threshold</label>
+                <div class="flex gap-2">
+                  <input type="number" 
+                         id="ping-latency-threshold"
+                         min="10" 
+                         step="5"
+                         value="<%= settings.pingNotifications?.latencyThreshold || 50 %>"
+                         class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <span class="flex items-center text-gray-400">ms</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Alert when ping exceeds this value (10-500 ms)</p>
+              </div>
+
+              <button id="save-ping-notifications-btn" class="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium text-sm">
+                <i class="fas fa-check mr-2"></i>Save Notification Settings
+              </button>
+            </div>
+
+            <!-- Telegram Bot Settings -->
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div class="flex items-start justify-between mb-6">
+                <div>
+                  <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                      <i class="fab fa-telegram-plane text-white text-sm"></i>
+                    </div>
+                    Telegram Notifications
+                  </h3>
+                  <p class="text-gray-400 text-sm mt-2">Configure Telegram bot for real-time alerts</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="telegram-enabled" class="sr-only peer" <%= settings.telegram?.enabled ? 'checked' : '' %>>
+                  <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span class="ml-3 text-sm font-medium text-gray-300">Enabled</span>
+                </label>
+              </div>
+
+              <div class="space-y-4">
+                <!-- Bot Token -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Bot Token</label>
+                  <input type="password" 
+                         id="telegram-bot-token"
+                         value="<%= settings.telegram?.botToken || '' %>"
+                         placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz..."
+                         class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <p class="text-xs text-gray-500 mt-1">Get token from @BotFather on Telegram</p>
+                </div>
+
+                <!-- Chat ID -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Chat ID</label>
+                  <input type="text" 
+                         id="telegram-chat-id"
+                         value="<%= settings.telegram?.chatId || '' %>"
+                         placeholder="-123456789"
+                         class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <p class="text-xs text-gray-500 mt-1">Your Telegram chat ID (use @userinfobot to get it)</p>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="grid grid-cols-1 gap-3">
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-server text-red-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">Device Down Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when devices go offline</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-device-down" class="sr-only peer" <%= settings.telegram?.notifyOnDeviceDown ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-server text-green-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">Device Up Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when devices come back online</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-device-up" class="sr-only peer" <%= settings.telegram?.notifyOnDeviceUp ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-microchip text-yellow-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">High CPU Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when CPU usage is high</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-high-cpu" class="sr-only peer" <%= settings.telegram?.notifyOnHighCpu ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-network-wired text-red-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">Ping Down Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when ping targets go offline</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-ping-down" class="sr-only peer" <%= settings.telegram?.notifyOnPingDown ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-network-wired text-green-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">Ping Up Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when ping targets come back online</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-ping-up" class="sr-only peer" <%= settings.telegram?.notifyOnPingUp ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-clock text-orange-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">Ping Timeout Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when ping requests timeout</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-ping-timeout" class="sr-only peer" <%= settings.telegram?.notifyOnPingTimeout ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                    <div class="flex items-center gap-3">
+                      <i class="fas fa-tachometer-alt text-yellow-400"></i>
+                      <div>
+                        <p class="text-sm font-medium text-white">High Ping Latency Alerts</p>
+                        <p class="text-xs text-gray-400">Notify when ping latency exceeds threshold</p>
+                      </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="telegram-notify-ping-high-latency" class="sr-only peer" <%= settings.telegram?.notifyOnPingHighLatency ? 'checked' : '' %>>
+                      <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- CPU Threshold -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">CPU Alert Threshold</label>
+                  <div class="flex gap-2">
+                    <input type="number" 
+                           id="telegram-cpu-threshold"
+                           min="1" 
+                           max="100"
+                           value="<%= settings.telegram?.cpuThreshold || 80 %>"
+                           class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="flex items-center text-gray-400">%</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Trigger CPU alert when usage exceeds this percentage</p>
+                </div>
+
+                <!-- Ping Latency Threshold -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Ping Latency Alert Threshold</label>
+                  <div class="flex gap-2">
+                    <input type="number" 
+                           id="telegram-ping-latency-threshold"
+                           min="10" 
+                           step="5"
+                           value="<%= settings.telegram?.pingLatencyThreshold || 50 %>"
+                           class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="flex items-center text-gray-400">ms</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Trigger ping latency alert when response time exceeds this value</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2">
+                  <button id="save-telegram-btn" class="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium text-sm">
+                    <i class="fas fa-check mr-2"></i>Save Settings
+                  </button>
+                  <button id="test-telegram-btn" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-500 hover:to-blue-600 transition-all font-medium text-sm">
+                    <i class="fas fa-paper-plane mr-2"></i>Test
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-slate-700 my-6"></div>
+
+          <!-- Interface Selection for Graphing -->
+          <h4 class="text-md font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-line text-green-500"></i>
+            Select Interfaces to Graph
+          </h4>
+
+          <div class="space-y-4">
+            <% Object.entries(devices).forEach(([deviceId, device]) => { %>
+              <div class="bg-slate-700/50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h5 class="font-semibold text-white flex items-center gap-2">
+                    <i class="fas fa-server text-blue-400"></i>
+                    <%= device.name %>
+                  </h5>
+                  <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                    <%= device.selectedInterfaces ? device.selectedInterfaces.length : 0 %> selected
+                  </span>
+                </div>
+
+                <% if (device.selectedInterfaces && device.selectedInterfaces.length > 0) { %>
+                  <div class="flex flex-wrap gap-2">
+                    <% device.selectedInterfaces.forEach(iface => { %>
+                      <%- typeof iface === 'string' ? `
+                        <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
+                          <input type="checkbox" 
+                                 name="interface-${deviceId}" 
+                                 value="${iface}"
+                                 data-device="${deviceId}"
+                                 class="interface-checkbox rounded"
+                                 checked>
+                          <span class="text-sm text-gray-200">${iface}</span>
+                        </label>
+                      ` : `
+                        <label class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 cursor-pointer transition-all">
+                          <input type="checkbox" 
+                                 name="interface-${deviceId}" 
+                                 value="${iface.name}"
+                                 data-device="${deviceId}"
+                                 class="interface-checkbox rounded"
+                                 checked>
+                          <span class="text-sm text-gray-200">${iface.name}</span>
+                        </label>
+                      ` %>
+                    <% }); %>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-2">Check interfaces to include in graph monitoring</p>
+                <% } else { %>
+                  <p class="text-xs text-gray-500">No interfaces selected for this device</p>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+
+          <!-- Save Interface Selection Button -->
+          <div class="mt-4">
+            <button id="save-interfaces-btn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all font-medium">
+              <i class="fas fa-save mr-2"></i>Save Interface Selection
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="hidden mt-6 p-4 rounded-lg text-sm font-medium">
+          <!-- Will be populated by JavaScript -->
         </div>
       </div>
     </div>
@@ -1417,21 +1486,21 @@
       // Set initial slider values
       const pollingIntervalSlider = document.getElementById('polling-interval-slider');
       const pingIntervalSlider = document.getElementById('ping-interval-slider');
-
+      
       if (pollingIntervalSlider) {
         updateSliderValue('polling-interval-slider', pollingIntervalSlider.value);
       }
       if (pingIntervalSlider) {
         updateSliderValue('ping-interval-slider', pingIntervalSlider.value);
       }
-
+      
       // Add event listeners for sliders
       document.querySelectorAll('.slider').forEach(slider => {
         slider.addEventListener('input', function() {
           updateSliderValue(this.id, this.value);
         });
       });
-
+      
       // Initialize mobile menu
       const mobileMenuButton = document.getElementById('mobile-menu-button');
       const sidebar = document.getElementById('sidebar');
@@ -1448,16 +1517,16 @@
           mobileOverlay.classList.add('hidden');
         });
       }
-
+      
       // Initialize header stats
       updateHeaderStats();
       setInterval(updateHeaderStats, 10000);
     });
-
+    
     function updateSliderValue(sliderId, value) {
       let displayElement;
       let unit = '';
-
+      
       switch(sliderId) {
         case 'polling-interval-slider':
           displayElement = document.getElementById('polling-current-value');
@@ -1467,28 +1536,24 @@
           displayElement = document.getElementById('ping-current-value');
           unit = 's';
           break;
-        case 'retention-slider':
-          displayElement = document.getElementById('retention-current-value');
-          unit = ' days';
-          break;
       }
-
+      
       if (displayElement) {
         displayElement.textContent = value + unit;
       }
     }
-
+    
     // Enhanced notification system
     function showNotification(message, type = 'info', duration = 3000) {
       const toastContainer = document.getElementById('toast-container');
       if (!toastContainer) return;
-
+      
       const toast = document.createElement('div');
       toast.className = `flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm z-50`;
-
+      
       let iconClass = '';
       let bgColor = '';
-
+      
       switch(type) {
         case 'success':
           iconClass = 'fas fa-check-circle';
@@ -1506,9 +1571,9 @@
           iconClass = 'fas fa-info-circle';
           bgColor = 'bg-blue-500';
       }
-
+      
       toast.classList.add(bgColor, 'text-white');
-
+      
       toast.innerHTML = `
         <i class="${iconClass} mr-3"></i>
         <span class="flex-1">${message}</span>
@@ -1516,14 +1581,14 @@
           <i class="fas fa-times"></i>
         </button>
       `;
-
+      
       toastContainer.appendChild(toast);
-
+      
       // Animate in
       setTimeout(() => {
         toast.classList.remove('translate-x-full');
       }, 10);
-
+      
       // Auto remove
       setTimeout(() => {
         toast.classList.add('translate-x-full');
@@ -1534,7 +1599,7 @@
         }, 300);
       }, duration);
     }
-
+    
     // Update header system stats
     function updateHeaderStats() {
       fetch('/api/system-info')
@@ -1556,16 +1621,19 @@
         })
         .catch(err => console.error('Error fetching system info:', err));
     }
-
+    
     // Element references
-    const pollingIntervalSlider = document.getElementById('polling-interval-slider');
-    const pingIntervalSlider = document.getElementById('ping-interval-slider');
-    const retentionSlider = document.getElementById('retention-slider');
-    const saveGeneralBtn = document.getElementById('save-general-btn');
+    const pollingIntervalInput = document.getElementById('polling-interval-input');
+    const saveIntervalBtn = document.getElementById('save-interval-btn');
+    const pingIntervalInput = document.getElementById('ping-interval-input');
+    const savePingIntervalBtn = document.getElementById('save-ping-interval-btn');
+    const dataRetentionInput = document.getElementById('data-retention-input');
+    const saveRetentionBtn = document.getElementById('save-retention-btn');
     const saveInterfacesBtn = document.getElementById('save-interfaces-btn');
     const statusMessage = document.getElementById('status-message');
+    const presetButtons = document.querySelectorAll('.preset-btn');
     const interfaceCheckboxes = document.querySelectorAll('.interface-checkbox');
-
+    
     // InfluxDB elements
     const influxdbUrl = document.getElementById('influxdb-url');
     const influxdbOrg = document.getElementById('influxdb-org');
@@ -1577,22 +1645,11 @@
     const influxdbStatusText = document.getElementById('influxdb-status-text');
     const toggleTokenVisibility = document.getElementById('toggle-token-visibility');
     const tokenEyeIcon = document.getElementById('token-eye-icon');
-
+    
     // Telegram elements
     const saveTelegramBtn = document.getElementById('save-telegram-btn');
     const testTelegramBtn = document.getElementById('test-telegram-btn');
-
-    // Email elements
-    const saveEmailBtn = document.getElementById('save-email-btn');
-    const testEmailBtn = document.getElementById('test-email-btn');
-
-    // Flapping elements
-    const saveFlappingBtn = document.getElementById('save-flapping-btn');
-    const viewFlappingStatusBtn = document.getElementById('view-flapping-status-btn');
-
-    // Ping elements
-    const savePingNotificationsBtn = document.getElementById('save-ping-notifications-btn');
-
+    
     // Toggle token visibility
     if (toggleTokenVisibility && tokenEyeIcon) {
       toggleTokenVisibility.addEventListener('click', function() {
@@ -1607,7 +1664,7 @@
         }
       });
     }
-
+    
     // Test InfluxDB connection
     if (testInfluxdbBtn) {
       testInfluxdbBtn.addEventListener('click', async function() {
@@ -1615,24 +1672,24 @@
         const org = influxdbOrg.value.trim();
         const bucket = influxdbBucket.value.trim();
         const token = influxdbToken.value.trim();
-
+        
         if (!url || !org || !bucket || !token) {
           showNotification('Please fill in all fields', 'error');
           return;
         }
-
+        
         testInfluxdbBtn.disabled = true;
         testInfluxdbBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
-
+        
         try {
           const response = await fetch('/api/settings/influxdb/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url, org, bucket, token })
           });
-
+          
           const data = await response.json();
-
+          
           if (response.ok && data.success) {
             showNotification('✓ Connection successful!', 'success');
           } else {
@@ -1647,7 +1704,7 @@
         }
       });
     }
-
+    
     // Save InfluxDB settings
     if (saveInfluxdbBtn) {
       saveInfluxdbBtn.addEventListener('click', async function() {
@@ -1655,24 +1712,24 @@
         const org = influxdbOrg.value.trim();
         const bucket = influxdbBucket.value.trim();
         const token = influxdbToken.value.trim();
-
+        
         if (!url || !org || !bucket || !token) {
           showNotification('Please fill in all fields', 'error');
           return;
         }
-
+        
         saveInfluxdbBtn.disabled = true;
         saveInfluxdbBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
+        
         try {
           const response = await fetch('/api/settings/influxdb', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url, org, bucket, token })
           });
-
+          
           const data = await response.json();
-
+          
           if (response.ok && data.success) {
             showNotification('✓ Settings saved successfully. Restarting...', 'success');
             setTimeout(() => {
@@ -1686,53 +1743,177 @@
           showNotification('✗ Failed to save settings', 'error');
         } finally {
           saveInfluxdbBtn.disabled = false;
-          saveInfluxdbBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Settings';
+          saveInfluxdbBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save';
         }
       });
     }
-
-    // Save general monitoring settings
-    if (saveGeneralBtn) {
-      saveGeneralBtn.addEventListener('click', async function() {
-        const pollingInterval = parseInt(pollingIntervalSlider.value) * 1000;
-        const pingInterval = parseInt(pingIntervalSlider.value) * 1000;
-        const dataRetention = parseInt(retentionSlider.value);
-
-        saveGeneralBtn.disabled = true;
-        saveGeneralBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
+    
+    // Handle preset buttons
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const value = this.getAttribute('data-value');
+        if (pollingIntervalInput) {
+          pollingIntervalInput.value = value;
+        }
+        updateIntervalDisplay(value);
+        
+        // Automatically save when preset is clicked
+        const seconds = parseInt(value);
+        if (!seconds || seconds < 10) {
+          showNotification('Error: Interval must be at least 10 seconds', 'error');
+          return;
+        }
+        
+        // Disable all preset buttons during save
+        const originalTexts = {};
+        presetButtons.forEach(b => {
+          originalTexts[b] = b.innerHTML;
+          b.disabled = true;
+          b.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+        });
+        
         try {
           const response = await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              pollingIntervalSeconds: pollingInterval / 1000,
-              pingIntervalSeconds: pingInterval / 1000,
-              dataRetentionDays: dataRetention
-            })
+            body: JSON.stringify({ pollingIntervalSeconds: seconds })
           });
-
+          
           if (!response.ok) {
             throw new Error('Failed to update settings');
           }
-
+          
           const data = await response.json();
-          showNotification('✓ Monitoring settings saved successfully', 'success');
-
+          showNotification(`✓ Polling interval updated to ${seconds} seconds (${(seconds/60).toFixed(1)} minutes)`, 'success');
+          
+          // Refresh settings after 2 seconds
           setTimeout(() => {
             location.reload();
           }, 2000);
         } catch (err) {
           console.error('Error:', err);
-          showNotification('✗ Failed to save monitoring settings', 'error');
+          showNotification('✗ Failed to update polling interval', 'error');
         } finally {
-          saveGeneralBtn.disabled = false;
-          saveGeneralBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Monitoring Settings';
+          // Re-enable preset buttons
+          presetButtons.forEach(b => {
+            b.disabled = false;
+            b.innerHTML = originalTexts[b];
+          });
+        }
+      });
+    });
+    
+    // Update display when input changes
+    if (pollingIntervalInput) {
+      pollingIntervalInput.addEventListener('input', function() {
+        updateIntervalDisplay(this.value);
+      });
+    }
+    
+    function updateIntervalDisplay(seconds) {
+      const mins = (seconds / 60).toFixed(2);
+      const pollsPerHour = (3600 / seconds).toFixed(1);
+      
+      const currentDisplay = document.getElementById('current-interval-display');
+      const infoSeconds = document.getElementById('info-seconds');
+      const infoMinutes = document.getElementById('info-minutes');
+      const infoPolls = document.getElementById('info-polls');
+      
+      if (currentDisplay) currentDisplay.textContent = `${seconds} sec`;
+      if (infoSeconds) infoSeconds.textContent = seconds;
+      if (infoMinutes) infoMinutes.textContent = mins;
+      if (infoPolls) infoPolls.textContent = pollsPerHour;
+    }
+    
+    // Save interval
+    if (saveIntervalBtn) {
+      saveIntervalBtn.addEventListener('click', async function() {
+        const seconds = parseInt(pollingIntervalInput.value);
+        
+        if (!seconds || seconds < 10) {
+          showNotification('Error: Interval must be at least 10 seconds', 'error');
+          return;
+        }
+        
+        saveIntervalBtn.disabled = true;
+        saveIntervalBtn.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pollingIntervalSeconds: seconds })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to update settings');
+          }
+          
+          const data = await response.json();
+          showNotification(`✓ Polling interval updated to ${seconds} seconds (${(seconds/60).toFixed(1)} minutes)`, 'success');
+          
+          // Refresh settings after 2 seconds
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+        } catch (err) {
+          console.error('Error:', err);
+          showNotification('✗ Failed to update polling interval', 'error');
+        } finally {
+          saveIntervalBtn.disabled = false;
+          saveIntervalBtn.classList.remove('opacity-50');
         }
       });
     }
-
+    
+    // Save ping interval
+    if (savePingIntervalBtn) {
+      savePingIntervalBtn.addEventListener('click', async function() {
+        const seconds = parseInt(pingIntervalInput.value);
+        
+        if (!seconds || seconds < 5) {
+          showNotification('Ping interval must be at least 5 seconds', 'warning');
+          return;
+        }
+        
+        if (seconds > 300) {
+          showNotification('Ping interval cannot exceed 300 seconds (5 minutes)', 'warning');
+          return;
+        }
+        
+        savePingIntervalBtn.disabled = true;
+        savePingIntervalBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+        
+        try {
+          const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pingIntervalSeconds: seconds })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to update settings');
+          }
+          
+          const data = await response.json();
+          showNotification(`✓ Ping interval updated to ${seconds} seconds`, 'success');
+          
+          // Refresh settings after 2 seconds
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+        } catch (err) {
+          console.error('Error:', err);
+          showNotification('✗ Failed to update ping interval', 'error');
+        } finally {
+          savePingIntervalBtn.disabled = false;
+          savePingIntervalBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Save';
+        }
+      });
+    }
+    
     // Save ping notifications
+    const savePingNotificationsBtn = document.getElementById('save-ping-notifications-btn');
     if (savePingNotificationsBtn) {
       savePingNotificationsBtn.addEventListener('click', async function() {
         const enabled = document.getElementById('ping-notifications-enabled').checked;
@@ -1740,20 +1921,20 @@
         const notifyOnTimeout = document.getElementById('ping-notify-timeout').checked;
         const notifyOnHighLatency = document.getElementById('ping-notify-high-latency').checked;
         const latencyThreshold = parseInt(document.getElementById('ping-latency-threshold').value);
-
+        
         if (!latencyThreshold || latencyThreshold < 10 || latencyThreshold > 500) {
           showNotification('Latency threshold must be between 10 and 500 ms', 'warning');
           return;
         }
-
+        
         savePingNotificationsBtn.disabled = true;
         savePingNotificationsBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
+        
         try {
           const response = await fetch('/api/settings/ping-notifications', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: JSON.stringify({ 
               enabled,
               notifyOnDown,
               notifyOnTimeout,
@@ -1761,13 +1942,13 @@
               latencyThreshold
             })
           });
-
+          
           if (!response.ok) {
             throw new Error('Failed to update notification settings');
           }
-
+          
           showNotification('✓ Notification settings saved successfully', 'success');
-
+          
           setTimeout(() => {
             location.reload();
           }, 1500);
@@ -1776,16 +1957,57 @@
           showNotification('✗ Failed to save notification settings', 'error');
         } finally {
           savePingNotificationsBtn.disabled = false;
-          savePingNotificationsBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Save Ping Settings';
+          savePingNotificationsBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Save Notification Settings';
         }
       });
     }
-
+    
+    // Save data retention
+    if (saveRetentionBtn) {
+      saveRetentionBtn.addEventListener('click', async function() {
+        const days = parseInt(dataRetentionInput.value);
+        
+        if (!days || days < 1 || days > 365) {
+          showNotification('Error: Data retention must be between 1 and 365 days', 'error');
+          return;
+        }
+        
+        saveRetentionBtn.disabled = true;
+        saveRetentionBtn.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataRetentionDays: days })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to update settings');
+          }
+          
+          const data = await response.json();
+          showNotification(`✓ Data retention updated to ${days} days`, 'success');
+          
+          // Refresh settings after 2 seconds
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+        } catch (err) {
+          console.error('Error:', err);
+          showNotification('✗ Failed to update data retention', 'error');
+        } finally {
+          saveRetentionBtn.disabled = false;
+          saveRetentionBtn.classList.remove('opacity-50');
+        }
+      });
+    }
+    
     // Save interface selection
     if (saveInterfacesBtn) {
       saveInterfacesBtn.addEventListener('click', async function() {
         const selectedByDevice = {};
-
+        
         // Group checked interfaces by device
         interfaceCheckboxes.forEach(checkbox => {
           const deviceId = checkbox.getAttribute('data-device');
@@ -1796,17 +2018,17 @@
             selectedByDevice[deviceId].push(checkbox.value);
           }
         });
-
+        
         // Check if at least one interface is selected
         const totalSelected = Object.values(selectedByDevice).reduce((sum, arr) => sum + arr.length, 0);
         if (totalSelected === 0) {
           showNotification('Error: Please select at least one interface', 'error');
           return;
         }
-
+        
         saveInterfacesBtn.disabled = true;
         saveInterfacesBtn.classList.add('opacity-50');
-
+        
         try {
           // Save each device's interface selection
           const promises = Object.entries(selectedByDevice).map(([deviceId, interfaces]) =>
@@ -1816,16 +2038,16 @@
               body: JSON.stringify({ selectedInterfaces: interfaces })
             })
           );
-
+          
           const responses = await Promise.all(promises);
           const allSuccess = responses.every(r => r.ok);
-
+          
           if (!allSuccess) {
             throw new Error('Some updates failed');
           }
-
+          
           showNotification(`✓ Interface selection updated! ${totalSelected} interfaces selected for graphing`, 'success');
-
+          
           // Refresh after 2 seconds
           setTimeout(() => {
             location.reload();
@@ -1839,7 +2061,7 @@
         }
       });
     }
-
+    
     // Save Telegram settings
     if (saveTelegramBtn) {
       saveTelegramBtn.addEventListener('click', async function() {
@@ -1857,7 +2079,7 @@
           notifyOnPingHighLatency: document.getElementById('telegram-notify-ping-high-latency').checked,
           pingLatencyThreshold: parseInt(document.getElementById('telegram-ping-latency-threshold').value) || 50
         };
-
+        
         // Validation
         if (telegramSettings.enabled) {
           if (!telegramSettings.botToken) {
@@ -1877,24 +2099,24 @@
             return;
           }
         }
-
+        
         saveTelegramBtn.disabled = true;
         saveTelegramBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
+        
         try {
           const response = await fetch('/api/settings/telegram', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(telegramSettings)
           });
-
+          
           if (!response.ok) {
             throw new Error('Failed to update Telegram settings');
           }
-
+          
           const data = await response.json();
           showNotification('✓ Telegram settings saved successfully', 'success');
-
+          
           // Refresh settings after 2 seconds
           setTimeout(() => {
             location.reload();
@@ -1908,32 +2130,32 @@
         }
       });
     }
-
+    
     // Test Telegram connection
     if (testTelegramBtn) {
       testTelegramBtn.addEventListener('click', async function() {
         const botToken = document.getElementById('telegram-bot-token').value.trim();
         const chatId = document.getElementById('telegram-chat-id').value.trim();
-
+        
         if (!botToken || !chatId) {
           showNotification('Error: Bot token and Chat ID are required for testing', 'error');
           return;
         }
-
+        
         testTelegramBtn.disabled = true;
         testTelegramBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
-
+        
         try {
           const response = await fetch('/api/settings/telegram/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ botToken, chatId })
           });
-
+          
           if (!response.ok) {
             throw new Error('Failed to test Telegram connection');
           }
-
+          
           const data = await response.json();
           if (data.success) {
             showNotification('✓ Telegram test message sent successfully!', 'success');
@@ -1946,256 +2168,6 @@
         } finally {
           testTelegramBtn.disabled = false;
           testTelegramBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Test';
-        }
-      });
-    }
-
-    // Save Email settings
-    if (saveEmailBtn) {
-      saveEmailBtn.addEventListener('click', async function() {
-        const emailSettings = {
-          smtp: {
-            host: document.getElementById('email-smtp-host').value.trim(),
-            port: parseInt(document.getElementById('email-smtp-port').value) || 587,
-            secure: document.getElementById('email-smtp-secure').value === 'true',
-            user: document.getElementById('email-smtp-user').value.trim(),
-            pass: document.getElementById('email-smtp-pass').value.trim()
-          },
-          from: document.getElementById('email-from').value.trim(),
-          to: document.getElementById('email-to').value.trim(),
-          notifyOnDeviceDown: document.getElementById('email-notify-device-down').checked,
-          notifyOnDeviceUp: document.getElementById('email-notify-device-up').checked,
-          notifyOnHighCpu: document.getElementById('email-notify-high-cpu').checked,
-          cpuThreshold: parseInt(document.getElementById('email-cpu-threshold').value) || 80,
-          notifyOnPingDown: document.getElementById('email-notify-ping-down').checked,
-          notifyOnPingUp: document.getElementById('email-notify-ping-up').checked,
-          notifyOnPingTimeout: document.getElementById('email-notify-ping-timeout').checked,
-          notifyOnPingHighLatency: document.getElementById('email-notify-ping-high-latency').checked,
-          pingLatencyThreshold: parseInt(document.getElementById('email-ping-latency-threshold').value) || 50
-        };
-
-        // Validation
-        if (emailSettings.smtp.host && emailSettings.from && emailSettings.to) {
-          if (!emailSettings.smtp.user || !emailSettings.smtp.pass) {
-            showNotification('Error: SMTP username and password are required when SMTP host is configured', 'error');
-            return;
-          }
-          if (emailSettings.cpuThreshold < 1 || emailSettings.cpuThreshold > 100) {
-            showNotification('Error: CPU threshold must be between 1 and 100', 'error');
-            return;
-          }
-          if (emailSettings.pingLatencyThreshold < 10 || emailSettings.pingLatencyThreshold > 500) {
-            showNotification('Error: Ping latency threshold must be between 10 and 500 ms', 'error');
-            return;
-          }
-        }
-
-        saveEmailBtn.disabled = true;
-        saveEmailBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
-        try {
-          const response = await fetch('/api/settings/email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailSettings)
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to update Email settings');
-          }
-
-          const data = await response.json();
-          showNotification('✓ Email settings saved successfully', 'success');
-
-          // Refresh settings after 2 seconds
-          setTimeout(() => {
-            location.reload();
-          }, 2000);
-        } catch (err) {
-          console.error('Error:', err);
-          showNotification('✗ Failed to save Email settings', 'error');
-        } finally {
-          saveEmailBtn.disabled = false;
-          saveEmailBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Email Settings';
-        }
-      });
-    }
-
-    // Test Email connection
-    if (testEmailBtn) {
-      testEmailBtn.addEventListener('click', async function() {
-        const emailSettings = {
-          smtp: {
-            host: document.getElementById('email-smtp-host').value.trim(),
-            port: parseInt(document.getElementById('email-smtp-port').value) || 587,
-            secure: document.getElementById('email-smtp-secure').value === 'true',
-            user: document.getElementById('email-smtp-user').value.trim(),
-            pass: document.getElementById('email-smtp-pass').value.trim()
-          },
-          from: document.getElementById('email-from').value.trim(),
-          to: document.getElementById('email-to').value.trim()
-        };
-
-        if (!emailSettings.smtp.host || !emailSettings.from || !emailSettings.to) {
-          showNotification('Error: SMTP host, from email, and to email are required for testing', 'error');
-          return;
-        }
-
-        if (!emailSettings.smtp.user || !emailSettings.smtp.pass) {
-          showNotification('Error: SMTP username and password are required for testing', 'error');
-          return;
-        }
-
-        testEmailBtn.disabled = true;
-        testEmailBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
-
-        try {
-          const response = await fetch('/api/settings/email/test', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailSettings)
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to test Email connection');
-          }
-
-          const data = await response.json();
-          if (data.success) {
-            showNotification('✓ Email test message sent successfully!', 'success');
-          } else {
-            showNotification('✗ Email test failed: ' + data.message, 'error');
-          }
-        } catch (err) {
-          console.error('Error:', err);
-          showNotification('✗ Failed to test Email connection', 'error');
-        } finally {
-          testEmailBtn.disabled = false;
-          testEmailBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Test Email';
-        }
-      });
-    }
-
-    // Save Flapping settings
-    if (saveFlappingBtn) {
-      saveFlappingBtn.addEventListener('click', async function() {
-        const flappingSettings = {
-          enabled: document.getElementById('flapping-enabled').checked,
-          deviceThreshold: parseInt(document.getElementById('flapping-device-threshold').value),
-          deviceWindowMinutes: parseInt(document.getElementById('flapping-device-window').value),
-          pingThreshold: parseInt(document.getElementById('flapping-ping-threshold').value),
-          pingWindowMinutes: parseInt(document.getElementById('flapping-ping-window').value),
-          suppressNotifications: document.getElementById('flapping-suppress-notifications').checked,
-          notifyOnFlappingStart: document.getElementById('flapping-notify-start').checked,
-          notifyOnFlappingStop: document.getElementById('flapping-notify-stop').checked
-        };
-
-        // Validation
-        if (flappingSettings.deviceThreshold < 2 || flappingSettings.deviceThreshold > 20) {
-          showNotification('Error: Device threshold must be between 2 and 20', 'error');
-          return;
-        }
-        if (flappingSettings.deviceWindowMinutes < 1 || flappingSettings.deviceWindowMinutes > 60) {
-          showNotification('Error: Device window must be between 1 and 60 minutes', 'error');
-          return;
-        }
-        if (flappingSettings.pingThreshold < 2 || flappingSettings.pingThreshold > 20) {
-          showNotification('Error: Ping threshold must be between 2 and 20', 'error');
-          return;
-        }
-        if (flappingSettings.pingWindowMinutes < 1 || flappingSettings.pingWindowMinutes > 60) {
-          showNotification('Error: Ping window must be between 1 and 60 minutes', 'error');
-          return;
-        }
-
-        saveFlappingBtn.disabled = true;
-        saveFlappingBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
-        try {
-          const response = await fetch('/api/settings/flapping', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(flappingSettings)
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to update Flapping settings');
-          }
-
-          const data = await response.json();
-          showNotification('✓ Flapping settings saved successfully', 'success');
-
-          // Refresh settings after 2 seconds
-          setTimeout(() => {
-            location.reload();
-          }, 2000);
-        } catch (err) {
-          console.error('Error:', err);
-          showNotification('✗ Failed to save Flapping settings', 'error');
-        } finally {
-          saveFlappingBtn.disabled = false;
-          saveFlappingBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Settings';
-        }
-      });
-    }
-
-    // View Flapping Status
-    if (viewFlappingStatusBtn) {
-      viewFlappingStatusBtn.addEventListener('click', async function() {
-        viewFlappingStatusBtn.disabled = true;
-        viewFlappingStatusBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
-
-        try {
-          const response = await fetch('/api/flapping/status');
-
-          if (!response.ok) {
-            throw new Error('Failed to get flapping status');
-          }
-
-          const data = await response.json();
-
-          // Create status display
-          let statusMessage = '🔄 <b>Flapping Status</b>\n\n';
-
-          // Device flapping
-          statusMessage += '<b>📍 Device Flapping:</b>\n';
-          const deviceFlapping = Object.values(data.deviceFlapping);
-          if (deviceFlapping.length === 0) {
-            statusMessage += '✅ No devices currently flapping\n';
-          } else {
-            deviceFlapping.forEach(device => {
-              const status = device.isFlapping ? '🔴 FLAPPING' : '✅ Stable';
-              statusMessage += `• ${device.deviceName}: ${status} (${device.transitionCount} transitions)\n`;
-            });
-          }
-
-          // Ping flapping
-          statusMessage += '\n<b>🌐 Ping Flapping:</b>\n';
-          const pingFlapping = Object.values(data.pingFlapping);
-          if (pingFlapping.length === 0) {
-            statusMessage += '✅ No ping targets currently flapping\n';
-          } else {
-            pingFlapping.forEach(target => {
-              const status = target.isFlapping ? '🔴 FLAPPING' : '✅ Stable';
-              statusMessage += `• ${target.targetName} (${target.targetHost}): ${status} (${target.transitionCount} transitions)\n`;
-            });
-          }
-
-          // Active alerts
-          const activeAlerts = Object.keys(data.activeAlerts).length;
-          statusMessage += `\n<b>🚨 Active Alerts:</b> ${activeAlerts}\n`;
-
-          // Show in notification (this will be a long message, but Telegram handles it)
-          // For now, just show a summary
-          const totalFlapping = deviceFlapping.filter(d => d.isFlapping).length + pingFlapping.filter(p => p.isFlapping).length;
-          showNotification(`Flapping Status: ${totalFlapping} items flapping, ${activeAlerts} active alerts`, totalFlapping > 0 ? 'warning' : 'success');
-
-        } catch (err) {
-          console.error('Error:', err);
-          showNotification('✗ Failed to get flapping status', 'error');
-        } finally {
-          viewFlappingStatusBtn.disabled = false;
-          viewFlappingStatusBtn.innerHTML = '<i class="fas fa-eye mr-2"></i>View Status';
         }
       });
     }

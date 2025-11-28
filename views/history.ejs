@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event History - SMon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen">
+  <div class="flex h-screen">
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-button" class="md:hidden fixed top-4 left-4 z-50 bg-gradient-to-br from-slate-800 to-slate-900 p-3 rounded-xl border border-slate-700/50 shadow-xl hover:shadow-2xl hover:border-slate-600/70 transition-all duration-300 group">
+      <i class="fas fa-bars text-white group-hover:scale-110 transition-transform duration-200"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="md:hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-30 hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-gradient-to-b from-slate-950 to-slate-900 border-r border-slate-700/50 shadow-2xl flex flex-col fixed md:relative inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-all duration-300 ease-in-out">
+      <!-- Header -->
+      <div class="p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <i class="fas fa-chart-line text-white font-bold text-lg group-hover:scale-110 transition-transform duration-200"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">SMon</h1>
+            <p class="text-xs text-gray-400">SNMP Monitor</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-4 py-6 overflow-y-auto">
+        <div class="space-y-2">
+          <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-chart-area w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/monitoring" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-gauge-high w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Bandwidth Monitor</span>
+          </a>
+          <a href="/ping" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-network-wired w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Ping Monitor</span>
+          </a>
+          <a href="/devices" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-server w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Devices</span>
+          </a>
+          <a href="/history" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium transition-all hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] group">
+            <i class="fas fa-history w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>History</span>
+          </a>
+          <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-cog w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Settings</span>
+          </a>
+          <a href="/about" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-800 hover:text-white transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group">
+            <i class="fas fa-info-circle w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>About</span>
+          </a>
+          <a href="/logout" class="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-red-600/20 hover:text-red-300 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] mt-4 group">
+            <i class="fas fa-sign-out-alt w-5 group-hover:scale-110 transition-transform duration-200"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-4 py-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+        <div class="text-xs text-gray-500 text-center">
+          <p class="font-medium">SNMP Monitor v2.0</p>
+          <p class="text-gray-600">Network Intelligence</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto md:ml-0">
+      <!-- Top Header -->
+      <div class="bg-gradient-to-r from-slate-950 to-slate-900 border-b border-slate-700/50 px-4 md:px-8 py-4 sticky top-0 z-20 shadow-xl">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+              <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                <i class="fas fa-history text-white text-sm"></i>
+              </div>
+              Event History
+            </h2>
+            <p class="text-gray-400 text-sm mt-1">Monitor and track all system events and notifications</p>
+          </div>
+
+          <!-- System Stats -->
+          <div class="flex flex-wrap gap-3 text-xs">
+            <div class="flex items-center gap-2 bg-gradient-to-br from-slate-800 to-slate-900 px-3 py-2 rounded-xl border border-slate-700/50 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105 group">
+              <div class="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-200">
+                <i class="fas fa-microchip text-white text-xs"></i>
+              </div>
+              <div>
+                <p class="text-gray-400 font-medium">CPU</p>
+                <p class="text-white font-semibold" id="header-cpu">--%</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-gradient-to-br from-slate-800 to-slate-900 px-3 py-2 rounded-xl border border-slate-700/50 hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/20 transition-all duration-300 hover:scale-105 group">
+              <div class="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-200">
+                <i class="fas fa-memory text-white text-xs"></i>
+              </div>
+              <div>
+                <p class="text-gray-400 font-medium">Memory</p>
+                <p class="text-white font-semibold" id="header-memory">--</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-gradient-to-br from-slate-800 to-slate-900 px-3 py-2 rounded-xl border border-slate-700/50 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105 group">
+              <div class="w-6 h-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-200">
+                <i class="fas fa-database text-white text-xs"></i>
+              </div>
+              <div>
+                <p class="text-gray-400 font-medium">Events</p>
+                <p class="text-white font-semibold" id="header-events">--</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="p-6">
+        <div class="max-w-7xl mx-auto">
+          <!-- Filters and Controls -->
+          <div class="bg-slate-800 rounded-xl p-6 mb-6 border border-slate-700">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <!-- Event Type Filter -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <i class="fas fa-filter mr-2"></i>Event Type
+                </label>
+            <select id="eventTypeFilter" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="all">All Events</option>
+              <option value="device_added">Device Added</option>
+              <option value="device_removed">Device Removed</option>
+              <option value="device_online">Device Online</option>
+              <option value="device_offline">Device Offline</option>
+              <option value="high_cpu">High CPU Usage</option>
+              <option value="ping_up">Ping Target Up</option>
+              <option value="ping_down">Ping Target Down</option>
+              <option value="ping_timeout">Ping Timeout</option>
+              <option value="high_latency">High Latency</option>
+              <option value="interface_down">Interface Down</option>
+              <option value="system">System Events</option>
+            </select>
+          </div>
+
+          <!-- Severity Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <i class="fas fa-exclamation-triangle mr-2"></i>Severity
+            </label>
+            <select id="severityFilter" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="all">All Severities</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="error">Error</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+
+          <!-- Time Range -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <i class="fas fa-calendar mr-2"></i>Time Range
+            </label>
+            <select id="timeRangeFilter" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="1h">Last Hour</option>
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d" selected>Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+
+          <!-- Search -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <i class="fas fa-search mr-2"></i>Search
+            </label>
+            <input
+              type="text"
+              id="searchFilter"
+              placeholder="Search events..."
+              class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 mt-4">
+          <button id="refreshBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+            <i class="fas fa-sync-alt mr-2"></i>Refresh
+          </button>
+          <button id="clearBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
+            <i class="fas fa-trash mr-2"></i>Clear History
+          </button>
+          <button id="exportBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200">
+            <i class="fas fa-download mr-2"></i>Export
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Total Events</p>
+              <p class="text-2xl font-bold text-white" id="totalEvents">0</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <i class="fas fa-list text-blue-400 text-xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Critical Events</p>
+              <p class="text-2xl font-bold text-red-400" id="criticalEvents">0</p>
+            </div>
+            <div class="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+              <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Warnings</p>
+              <p class="text-2xl font-bold text-yellow-400" id="warningEvents">0</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+              <i class="fas fa-exclamation-circle text-yellow-400 text-xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Info Events</p>
+              <p class="text-2xl font-bold text-green-400" id="infoEvents">0</p>
+            </div>
+            <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <i class="fas fa-info-circle text-green-400 text-xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Events Table -->
+      <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div class="p-6 border-b border-slate-700">
+          <h2 class="text-xl font-semibold text-white">
+            <i class="fas fa-list-ul mr-2"></i>Event Log
+          </h2>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-slate-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Severity</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Event Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Source</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Message</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Details</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody" class="divide-y divide-slate-700">
+              <!-- Events will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="p-8 text-center">
+          <div class="inline-flex items-center gap-3 text-gray-400">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading events...</span>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden p-8 text-center">
+          <div class="text-gray-400">
+            <i class="fas fa-inbox text-4xl mb-4 block"></i>
+            <p class="text-lg">No events found</p>
+            <p class="text-sm">Events will appear here as they occur in the system.</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="hidden px-6 py-4 border-t border-slate-700 bg-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-400">
+              Showing <span id="showingStart">0</span> to <span id="showingEnd">0</span> of <span id="totalRecords">0</span> events
+            </div>
+            <div class="flex gap-2">
+              <button id="prevPageBtn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span id="currentPage" class="px-3 py-1 bg-blue-600 text-white rounded">1</span>
+              <button id="nextPageBtn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Details Modal -->
+  <div id="eventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-slate-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div class="p-6 border-b border-slate-700">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-white">Event Details</h3>
+            <button id="closeModalBtn" class="text-gray-400 hover:text-white">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+        </div>
+        <div id="modalContent" class="p-6 overflow-y-auto max-h-96">
+          <!-- Event details will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentEvents = [];
+    let filteredEvents = [];
+    let currentPage = 1;
+    const eventsPerPage = 50;
+
+    // Event type configurations
+    const eventTypes = {
+      device_added: { icon: 'fas fa-plus-circle', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+      device_removed: { icon: 'fas fa-minus-circle', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+      device_online: { icon: 'fas fa-check-circle', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+      device_offline: { icon: 'fas fa-times-circle', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+      high_cpu: { icon: 'fas fa-microchip', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' },
+      ping_up: { icon: 'fas fa-arrow-up', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+      ping_down: { icon: 'fas fa-arrow-down', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+      ping_timeout: { icon: 'fas fa-clock', color: 'text-orange-400', bgColor: 'bg-orange-500/20' },
+      high_latency: { icon: 'fas fa-tachometer-alt', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' },
+      interface_down: { icon: 'fas fa-ethernet', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+      system: { icon: 'fas fa-cog', color: 'text-blue-400', bgColor: 'bg-blue-500/20' }
+    };
+
+    const severityColors = {
+      info: 'text-blue-400',
+      warning: 'text-yellow-400',
+      error: 'text-red-400',
+      critical: 'text-red-500'
+    };
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      loadEvents();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      // Filter listeners
+      document.getElementById('eventTypeFilter').addEventListener('change', applyFilters);
+      document.getElementById('severityFilter').addEventListener('change', applyFilters);
+      document.getElementById('timeRangeFilter').addEventListener('change', applyFilters);
+      document.getElementById('searchFilter').addEventListener('input', applyFilters);
+
+      // Button listeners
+      document.getElementById('refreshBtn').addEventListener('click', loadEvents);
+      document.getElementById('clearBtn').addEventListener('click', clearHistory);
+      document.getElementById('exportBtn').addEventListener('click', exportEvents);
+
+      // Pagination listeners
+      document.getElementById('prevPageBtn').addEventListener('click', () => changePage(currentPage - 1));
+      document.getElementById('nextPageBtn').addEventListener('click', () => changePage(currentPage + 1));
+
+      // Modal listeners
+      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+      document.getElementById('eventModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+    }
+
+    async function loadEvents() {
+      try {
+        document.getElementById('loadingIndicator').classList.remove('hidden');
+        document.getElementById('emptyState').classList.add('hidden');
+
+        const response = await fetch('/api/history');
+        const data = await response.json();
+
+        currentEvents = data.events || [];
+        applyFilters();
+        updateStatistics();
+
+      } catch (error) {
+        console.error('Error loading events:', error);
+        showToast('Failed to load events', 'error');
+      } finally {
+        document.getElementById('loadingIndicator').classList.add('hidden');
+      }
+    }
+
+    function applyFilters() {
+      const eventType = document.getElementById('eventTypeFilter').value;
+      const severity = document.getElementById('severityFilter').value;
+      const timeRange = document.getElementById('timeRangeFilter').value;
+      const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+
+      let filtered = currentEvents;
+
+      // Filter by event type
+      if (eventType !== 'all') {
+        filtered = filtered.filter(event => event.type === eventType);
+      }
+
+      // Filter by severity
+      if (severity !== 'all') {
+        filtered = filtered.filter(event => event.severity === severity);
+      }
+
+      // Filter by time range
+      if (timeRange !== 'all') {
+        const now = new Date();
+        let cutoffTime;
+
+        switch (timeRange) {
+          case '1h':
+            cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+            break;
+          case '24h':
+            cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            cutoffTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+        }
+
+        filtered = filtered.filter(event => new Date(event.timestamp) >= cutoffTime);
+      }
+
+      // Filter by search term
+      if (searchTerm) {
+        filtered = filtered.filter(event =>
+          event.message.toLowerCase().includes(searchTerm) ||
+          event.source.toLowerCase().includes(searchTerm) ||
+          event.type.toLowerCase().includes(searchTerm)
+        );
+      }
+
+      filteredEvents = filtered;
+      currentPage = 1;
+      renderEvents();
+    }
+
+    function renderEvents() {
+      const tbody = document.getElementById('eventsTableBody');
+      const startIndex = (currentPage - 1) * eventsPerPage;
+      const endIndex = startIndex + eventsPerPage;
+      const eventsToShow = filteredEvents.slice(startIndex, endIndex);
+
+      if (eventsToShow.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('pagination').classList.add('hidden');
+        tbody.innerHTML = '';
+        return;
+      }
+
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('pagination').classList.remove('hidden');
+
+      tbody.innerHTML = eventsToShow.map(event => {
+        const eventConfig = eventTypes[event.type] || eventTypes.system;
+        const severityColor = severityColors[event.severity] || 'text-gray-400';
+
+        return `
+          <tr class="hover:bg-slate-700/50 transition-colors duration-200 cursor-pointer" onclick="showEventDetails(${event.id})">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+              ${formatDateTime(event.timestamp)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColor} bg-slate-700">
+                ${event.severity.toUpperCase()}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 ${eventConfig.bgColor} rounded-lg flex items-center justify-center">
+                  <i class="${eventConfig.icon} ${eventConfig.color} text-sm"></i>
+                </div>
+                <span class="text-sm text-gray-300">${formatEventType(event.type)}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+              ${event.source}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">
+              ${event.message}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-400">
+              <button onclick="event.stopPropagation(); showEventDetails(${event.id})" class="hover:text-blue-300">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updatePagination();
+    }
+
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+      const showingStart = (currentPage - 1) * eventsPerPage + 1;
+      const showingEnd = Math.min(currentPage * eventsPerPage, filteredEvents.length);
+
+      document.getElementById('showingStart').textContent = showingStart;
+      document.getElementById('showingEnd').textContent = showingEnd;
+      document.getElementById('totalRecords').textContent = filteredEvents.length;
+      document.getElementById('currentPage').textContent = currentPage;
+
+      document.getElementById('prevPageBtn').disabled = currentPage === 1;
+      document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+    }
+
+    function changePage(page) {
+      const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+      if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        renderEvents();
+      }
+    }
+
+    function updateStatistics() {
+      const stats = {
+        total: currentEvents.length,
+        critical: currentEvents.filter(e => e.severity === 'critical').length,
+        warning: currentEvents.filter(e => e.severity === 'warning').length,
+        info: currentEvents.filter(e => e.severity === 'info').length
+      };
+
+      document.getElementById('totalEvents').textContent = stats.total;
+      document.getElementById('criticalEvents').textContent = stats.critical;
+      document.getElementById('warningEvents').textContent = stats.warning;
+      document.getElementById('infoEvents').textContent = stats.info;
+    }
+
+    function formatDateTime(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    }
+
+    function formatEventType(type) {
+      return type.split('_').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    }
+
+    function showEventDetails(eventId) {
+      const event = currentEvents.find(e => e.id === eventId);
+      if (!event) return;
+
+      const eventConfig = eventTypes[event.type] || eventTypes.system;
+
+      const modalContent = document.getElementById('modalContent');
+      modalContent.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 ${eventConfig.bgColor} rounded-lg flex items-center justify-center">
+              <i class="${eventConfig.icon} ${eventConfig.color} text-xl"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-white">${formatEventType(event.type)}</h4>
+              <p class="text-gray-400">${formatDateTime(event.timestamp)}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-400">Severity</label>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColors[event.severity]} bg-slate-700">
+                ${event.severity.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400">Source</label>
+              <p class="text-white">${event.source}</p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Message</label>
+            <p class="text-white bg-slate-700 p-3 rounded-lg">${event.message}</p>
+          </div>
+
+          ${event.details ? `
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Additional Details</label>
+              <pre class="text-white bg-slate-700 p-3 rounded-lg text-sm overflow-x-auto">${JSON.stringify(event.details, null, 2)}</pre>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('eventModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('eventModal').classList.add('hidden');
+    }
+
+    async function clearHistory() {
+      if (!confirm('Are you sure you want to clear all event history? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/history', {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          currentEvents = [];
+          filteredEvents = [];
+          renderEvents();
+          updateStatistics();
+          showToast('Event history cleared successfully', 'success');
+        } else {
+          throw new Error('Failed to clear history');
+        }
+      } catch (error) {
+        console.error('Error clearing history:', error);
+        showToast('Failed to clear event history', 'error');
+      }
+    }
+
+    function exportEvents() {
+      const dataStr = JSON.stringify(filteredEvents, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+      const exportFileDefaultName = `smon-events-${new Date().toISOString().split('T')[0]}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+      const toastContainer = document.getElementById('toast-container') || document.body;
+
+      const toast = document.createElement('div');
+      toast.className = `flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
+
+      const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-blue-500'
+      };
+
+      toast.classList.add(colors[type] || colors.info);
+      toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+        ${message}
+      `;
+
+      toastContainer.appendChild(toast);
+
+      // Animate in
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+      }, 10);
+
+      // Auto remove
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.remove();
+          }
+        }, 300);
+      }, duration);
+    }
+  </script>
+
+  <script>
+    // Mobile menu functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const sidebar = document.getElementById('sidebar');
+      const mobileOverlay = document.getElementById('mobile-overlay');
+
+      // Mobile menu toggle
+      mobileMenuButton.addEventListener('click', function() {
+        sidebar.classList.toggle('-translate-x-full');
+        mobileOverlay.classList.toggle('hidden');
+      });
+
+      // Close sidebar when clicking overlay
+      mobileOverlay.addEventListener('click', function() {
+        sidebar.classList.add('-translate-x-full');
+        mobileOverlay.classList.add('hidden');
+      });
+
+      // Load history data
+      loadEvents();
+    });
+
+    // Update header system stats
+    function updateHeaderStats() {
+      fetch('/api/system-info')
+        .then(response => response.json())
+        .then(data => {
+          if (document.getElementById('header-cpu')) {
+            document.getElementById('header-cpu').textContent = data.cpuUsage + '%';
+          }
+          if (document.getElementById('header-memory')) {
+            const memUsedGB = (data.memory.used / 1024 / 1024 / 1024).toFixed(1);
+            const memTotalGB = (data.memory.total / 1024 / 1024 / 1024).toFixed(1);
+            document.getElementById('header-memory').textContent = `${memUsedGB}/${memTotalGB}GB`;
+          }
+          if (document.getElementById('header-events')) {
+            // Update events count
+            fetch('/api/history')
+              .then(response => response.json())
+              .then(history => {
+                document.getElementById('header-events').textContent = history.length;
+              })
+              .catch(err => console.error('Error fetching history count:', err));
+          }
+        })
+        .catch(err => console.error('Error fetching system info:', err));
+    }
+
+    // Initial update and periodic refresh
+    updateHeaderStats();
+    setInterval(updateHeaderStats, 10000); // Update every 10 seconds
+  </script>
+</body>
+</html></html>

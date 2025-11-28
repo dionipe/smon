@@ -1,0 +1,31 @@
+[
+  {
+    "id": 1764342999619,
+    "timestamp": "2025-11-28T15:16:39.619Z",
+    "type": "ping_up",
+    "severity": "info",
+    "source": "OpenDNS",
+    "message": "Ping target \"OpenDNS\" (208.67.222.222) is back online",
+    "details": {
+      "targetId": 4,
+      "targetName": "OpenDNS",
+      "host": "208.67.222.222",
+      "latency": 32.5,
+      "packetLoss": 0
+    }
+  },
+  {
+    "id": 1764342889588,
+    "timestamp": "2025-11-28T15:14:49.588Z",
+    "type": "ping_down",
+    "severity": "error",
+    "source": "OpenDNS",
+    "message": "Ping target \"OpenDNS\" (208.67.222.222) is down",
+    "details": {
+      "targetId": 4,
+      "targetName": "OpenDNS",
+      "host": "208.67.222.222",
+      "packetLoss": 100
+    }
+  }
+]

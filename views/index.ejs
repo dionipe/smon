@@ -3,9 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="description" content="Advanced SNMP Network Monitoring Dashboard">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SMon">
   <title>SMon - SNMP Monitoring Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen">
   <div class="flex h-screen">
@@ -50,6 +57,10 @@
           <a href="/devices" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
             <i class="fas fa-server w-5"></i>
             <span>Devices</span>
+          </a>
+          <a href="/history" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
+            <i class="fas fa-history w-5"></i>
+            <span>History</span>
           </a>
           <a href="/settings" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 transition-all duration-200">
             <i class="fas fa-cog w-5"></i>
@@ -127,6 +138,14 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- PWA Install Button -->
+        <div id="install-button" class="hidden">
+          <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2">
+            <i class="fas fa-download"></i>
+            Install App
+          </button>
         </div>
       </div>
 
@@ -751,6 +770,194 @@
       setInterval(updateLastUpdateTime, 60000);
       setInterval(updateSystemInfo, 30000); // Update system info every 30 seconds
     });
+
+    // PWA and Service Worker functionality
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('[PWA] Service Worker registered:', registration.scope);
+
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdateNotification();
+                  }
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.error('[PWA] Service Worker registration failed:', error);
+          });
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installButton = document.getElementById('install-button');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('[PWA] Before install prompt fired');
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Show install button if it exists
+      if (installButton) {
+        installButton.style.display = 'block';
+        installButton.addEventListener('click', () => {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('[PWA] User accepted the install prompt');
+            } else {
+              console.log('[PWA] User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+          });
+        });
+      }
+    });
+
+    // Hide install button after successful install
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('[PWA] App was installed');
+      if (installButton) {
+        installButton.style.display = 'none';
+      }
+    });
+
+    // Push Notification Subscription
+    async function subscribeToNotifications() {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const response = await fetch('/api/push-key');
+        const vapidKeys = await response.json();
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKeys.publicKey)
+        });
+
+        await fetch('/api/push-subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(subscription)
+        });
+
+        console.log('[PWA] Push notifications subscribed');
+      } catch (error) {
+        console.error('[PWA] Push subscription failed:', error);
+      }
+    }
+
+    // Request notification permission and subscribe
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      if (Notification.permission === 'default') {
+        setTimeout(() => {
+          if (confirm('Enable push notifications for important alerts?')) {
+            Notification.requestPermission().then((permission) => {
+              if (permission === 'granted') {
+                subscribeToNotifications();
+              }
+            });
+          }
+        }, 5000); // Ask after 5 seconds
+      } else if (Notification.permission === 'granted') {
+        subscribeToNotifications();
+      }
+    }
+
+    // Utility function for VAPID key conversion
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    // Show update notification
+    function showUpdateNotification() {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm';
+      notification.innerHTML = `
+        <div class="flex items-start gap-3">
+          <i class="fas fa-sync-alt text-xl mt-1"></i>
+          <div class="flex-1">
+            <h4 class="font-semibold">Update Available</h4>
+            <p class="text-sm opacity-90 mt-1">A new version of SMon is available. Refresh to update.</p>
+            <button onclick="window.location.reload()" class="mt-3 bg-white text-blue-600 px-4 py-2 rounded text-sm font-medium hover:bg-gray-100 transition-colors">
+              Refresh Now
+            </button>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-70 hover:opacity-100">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      document.body.appendChild(notification);
+    }
+
+    // Offline/Online status handling
+    function updateOnlineStatus() {
+      const isOnline = navigator.onLine;
+      console.log('[PWA] Network status changed:', isOnline ? 'online' : 'offline');
+
+      if (!isOnline) {
+        showOfflineNotification();
+      } else {
+        hideOfflineNotification();
+        // Sync offline data if any
+        if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.sync.register('sync-offline-data');
+          });
+        }
+      }
+    }
+
+    function showOfflineNotification() {
+      let notification = document.getElementById('offline-notification');
+      if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'offline-notification';
+        notification.className = 'fixed top-4 left-4 bg-orange-600 text-white px-4 py-3 rounded-lg shadow-lg z-50';
+        notification.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fas fa-wifi-slash"></i>
+            <span class="text-sm font-medium">You're offline - Some features may be limited</span>
+          </div>
+        `;
+        document.body.appendChild(notification);
+      }
+    }
+
+    function hideOfflineNotification() {
+      const notification = document.getElementById('offline-notification');
+      if (notification) {
+        notification.remove();
+      }
+    }
+
+    // Listen for online/offline events
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // Initial status check
+    updateOnlineStatus();
   </script>
 </body>
 </html>

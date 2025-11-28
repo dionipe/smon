@@ -5,6 +5,7 @@ const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const snmp = require('net-snmp');
 const ping = require('ping');
 const TelegramBot = require('node-telegram-bot-api');
+const nodemailer = require('nodemailer');
 const os = require('os');
 
 const app = express();
@@ -214,6 +215,17 @@ function sendTelegramMessage(message) {
 }
 
 function notifyDeviceStatus(deviceId, deviceName, status, details = '') {
+  // Record the transition for flapping detection
+  recordDeviceTransition(deviceId, status);
+
+  // Check if device is flapping and suppress notifications if configured
+  if (settings.flapping && settings.flapping.enabled && settings.flapping.suppressNotifications) {
+    if (isDeviceFlapping(deviceId)) {
+      console.log(`[${deviceId}] Suppressing ${status} notification - device is flapping`);
+      return;
+    }
+  }
+
   if (!settings.telegram || !settings.telegram.enabled) return;
 
   const timestamp = new Date().toLocaleString('id-ID');
@@ -235,6 +247,7 @@ function notifyDeviceStatus(deviceId, deviceName, status, details = '') {
 
   if (message) {
     sendTelegramMessage(message);
+    notifyDeviceStatusEmail(deviceId, deviceName, status, details);
   }
 }
 
@@ -252,10 +265,30 @@ function notifyHighCpu(deviceId, deviceName, cpuValue) {
                     `🚨 <b>Status:</b> CPU usage is above threshold!`;
 
     sendTelegramMessage(message);
+    notifyHighCpuEmail(deviceId, deviceName, cpuValue);
+    
+    // Log high CPU event
+    logEvent('high_cpu', 'warning', deviceName, `Device "${deviceName}" has high CPU usage: ${cpuValue}% (threshold: ${threshold}%)`, {
+      deviceId: deviceId,
+      deviceName: deviceName,
+      cpuValue: cpuValue,
+      threshold: threshold
+    });
   }
 }
 
 function notifyPingStatus(targetId, targetName, targetHost, status, latency = null, packetLoss = null) {
+  // Record the transition for flapping detection
+  recordPingTransition(targetId, status);
+
+  // Check if ping target is flapping and suppress notifications if configured
+  if (settings.flapping && settings.flapping.enabled && settings.flapping.suppressNotifications) {
+    if (isPingFlapping(targetId)) {
+      console.log(`[PING-${targetId}] Suppressing ${status} notification - target is flapping`);
+      return;
+    }
+  }
+
   if (!settings.telegram || !settings.telegram.enabled) return;
 
   const timestamp = new Date().toLocaleString('id-ID');
@@ -270,6 +303,14 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
               `📊 <b>Packet Loss:</b> 100%\n` +
               `🚨 <b>Alert:</b> Ping target is down!`;
     shouldNotify = true;
+    
+    // Log ping down event
+    logEvent('ping_down', 'error', targetName, `Ping target "${targetName}" (${targetHost}) is down`, {
+      targetId: targetId,
+      targetName: targetName,
+      host: targetHost,
+      packetLoss: packetLoss || 100
+    });
   } else if (status === 'up' && settings.telegram.notifyOnPingUp) {
     message = `🟢 <b>Ping Target Up Alert</b>\n\n` +
               `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
@@ -279,6 +320,15 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
               `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
               `🎉 <b>Alert:</b> Ping target recovered!`;
     shouldNotify = true;
+    
+    // Log ping up event
+    logEvent('ping_up', 'info', targetName, `Ping target "${targetName}" (${targetHost}) is back online`, {
+      targetId: targetId,
+      targetName: targetName,
+      host: targetHost,
+      latency: latency,
+      packetLoss: packetLoss
+    });
   } else if (status === 'timeout' && settings.telegram.notifyOnPingTimeout) {
     message = `⏰ <b>Ping Timeout Alert</b>\n\n` +
               `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
@@ -287,6 +337,14 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
               `📊 <b>Packet Loss:</b> 100%\n` +
               `🚨 <b>Alert:</b> Ping timeout detected!`;
     shouldNotify = true;
+    
+    // Log ping timeout event
+    logEvent('ping_timeout', 'warning', targetName, `Ping target "${targetName}" (${targetHost}) timed out`, {
+      targetId: targetId,
+      targetName: targetName,
+      host: targetHost,
+      packetLoss: 100
+    });
   } else if (status === 'high_latency' && settings.telegram.notifyOnPingHighLatency && latency !== null) {
     const threshold = settings.telegram.pingLatencyThreshold || 50;
     if (latency >= threshold) {
@@ -298,12 +356,407 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
                 `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
                 `🚨 <b>Alert:</b> Ping latency is above threshold!`;
       shouldNotify = true;
+      
+      // Log high latency event
+      logEvent('high_latency', 'warning', targetName, `Ping target "${targetName}" (${targetHost}) has high latency: ${latency}ms`, {
+        targetId: targetId,
+        targetName: targetName,
+        host: targetHost,
+        latency: latency,
+        packetLoss: packetLoss,
+        threshold: threshold
+      });
     }
   }
 
   if (shouldNotify && message) {
     sendTelegramMessage(message);
+    notifyPingStatusEmail(targetId, targetName, targetHost, status, latency, packetLoss);
   }
+}
+
+// Email notification functions
+function sendEmail(subject, htmlContent, textContent = '') {
+  if (!emailTransporter || !settings.email || !settings.email.enabled || !settings.email.toEmail) {
+    return;
+  }
+
+  try {
+    const mailOptions = {
+      from: settings.email.fromEmail || settings.email.smtpUser,
+      to: settings.email.toEmail,
+      subject: subject,
+      html: htmlContent,
+      text: textContent || htmlContent.replace(/<[^>]*>/g, '') // Strip HTML tags for text version
+    };
+
+    emailTransporter.sendMail(mailOptions)
+      .then(() => {
+        console.log('[EMAIL] Message sent successfully');
+      })
+      .catch(error => {
+        console.error('[EMAIL] Failed to send message:', error.message);
+      });
+  } catch (error) {
+    console.error('[EMAIL] Error sending message:', error.message);
+  }
+}
+
+function notifyDeviceStatusEmail(deviceId, deviceName, status, details = '') {
+  if (!settings.email || !settings.email.enabled) return;
+
+  const timestamp = new Date().toLocaleString('id-ID');
+  let subject = '';
+  let htmlContent = '';
+
+  if (status === 'up' && settings.email.notifyOnDeviceUp) {
+    subject = `🟢 Device UP Alert - ${deviceName}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #22c55e;">🟢 Device UP Alert</h2>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Device:</strong> ${deviceName} (${deviceId})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>📊 Status:</strong> Device is now online</p>
+          ${details ? `<p><strong>ℹ️ Details:</strong> ${details}</p>` : ''}
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+  } else if (status === 'down' && settings.email.notifyOnDeviceDown) {
+    subject = `🔴 Device DOWN Alert - ${deviceName}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ef4444;">🔴 Device DOWN Alert</h2>
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Device:</strong> ${deviceName} (${deviceId})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>📊 Status:</strong> Device is offline</p>
+          ${details ? `<p><strong>ℹ️ Details:</strong> ${details}</p>` : ''}
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+  }
+
+  if (subject && htmlContent) {
+    sendEmail(subject, htmlContent);
+  }
+}
+
+function notifyHighCpuEmail(deviceId, deviceName, cpuValue) {
+  if (!settings.email || !settings.email.enabled || !settings.email.notifyOnHighCpu) return;
+
+  const threshold = settings.email.cpuThreshold || 80;
+  if (cpuValue >= threshold) {
+    const timestamp = new Date().toLocaleString('id-ID');
+    const subject = `⚠️ High CPU Usage Alert - ${deviceName}`;
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">⚠️ High CPU Usage Alert</h2>
+        <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Device:</strong> ${deviceName} (${deviceId})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>📊 CPU Usage:</strong> ${cpuValue}%</p>
+          <p><strong>🎯 Threshold:</strong> ${threshold}%</p>
+          <p><strong>🚨 Status:</strong> CPU usage is above threshold!</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+
+    sendEmail(subject, htmlContent);
+  }
+}
+
+function notifyPingStatusEmail(targetId, targetName, targetHost, status, latency = null, packetLoss = null) {
+  if (!settings.email || !settings.email.enabled) return;
+
+  const timestamp = new Date().toLocaleString('id-ID');
+  let subject = '';
+  let htmlContent = '';
+  let shouldNotify = false;
+
+  if (status === 'down' && settings.email.notifyOnPingDown) {
+    subject = `🔴 Ping Target Down Alert - ${targetName}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ef4444;">🔴 Ping Target Down Alert</h2>
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Target:</strong> ${targetName} (${targetHost})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>❌ Status:</strong> Target is unreachable</p>
+          <p><strong>📊 Packet Loss:</strong> 100%</p>
+          <p><strong>🚨 Alert:</strong> Ping target is down!</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+    shouldNotify = true;
+  } else if (status === 'up' && settings.email.notifyOnPingUp) {
+    subject = `🟢 Ping Target Up Alert - ${targetName}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #22c55e;">🟢 Ping Target Up Alert</h2>
+        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Target:</strong> ${targetName} (${targetHost})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>✅ Status:</strong> Target is back online</p>
+          <p><strong>📊 Latency:</strong> ${latency}ms</p>
+          <p><strong>📊 Packet Loss:</strong> ${packetLoss}%</p>
+          <p><strong>🎉 Alert:</strong> Ping target recovered!</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+    shouldNotify = true;
+  } else if (status === 'timeout' && settings.email.notifyOnPingTimeout) {
+    subject = `⏰ Ping Timeout Alert - ${targetName}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">⏰ Ping Timeout Alert</h2>
+        <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 Target:</strong> ${targetName} (${targetHost})</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>⏳ Status:</strong> Ping request timed out</p>
+          <p><strong>📊 Packet Loss:</strong> 100%</p>
+          <p><strong>🚨 Alert:</strong> Ping timeout detected!</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+    shouldNotify = true;
+  } else if (status === 'high_latency' && settings.email.notifyOnPingHighLatency && latency !== null) {
+    const threshold = settings.email.pingLatencyThreshold || 50;
+    if (latency >= threshold) {
+      subject = `🐌 High Ping Latency Alert - ${targetName}`;
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #f59e0b;">🐌 High Ping Latency Alert</h2>
+          <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>📍 Target:</strong> ${targetName} (${targetHost})</p>
+            <p><strong>⏰ Time:</strong> ${timestamp}</p>
+            <p><strong>📊 Latency:</strong> ${latency}ms</p>
+            <p><strong>🎯 Threshold:</strong> ${threshold}ms</p>
+            <p><strong>📊 Packet Loss:</strong> ${packetLoss}%</p>
+            <p><strong>🚨 Alert:</strong> Ping latency is above threshold!</p>
+          </div>
+          <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+        </div>
+      `;
+      shouldNotify = true;
+    }
+  }
+
+  if (shouldNotify && subject && htmlContent) {
+    sendEmail(subject, htmlContent);
+  }
+}
+
+// Flapping Detection Functions
+function isDeviceFlapping(deviceId) {
+  if (!settings.flapping || !settings.flapping.enabled) return false;
+
+  const history = deviceFlappingHistory[deviceId];
+  if (!history || history.transitions.length < 2) return false;
+
+  const now = Date.now();
+  const windowMs = settings.flapping.deviceWindowMinutes * 60 * 1000;
+  const threshold = settings.flapping.deviceThreshold;
+
+  // Filter transitions within the time window
+  const recentTransitions = history.transitions.filter(t => now - t.timestamp < windowMs);
+
+  // Update history with filtered transitions
+  history.transitions = recentTransitions;
+
+  return recentTransitions.length >= threshold;
+}
+
+function recordDeviceTransition(deviceId, status) {
+  if (!deviceFlappingHistory[deviceId]) {
+    deviceFlappingHistory[deviceId] = {
+      transitions: [],
+      isFlapping: false,
+      lastStatus: null
+    };
+  }
+
+  const history = deviceFlappingHistory[deviceId];
+  const now = Date.now();
+
+  // Only record if status actually changed
+  if (history.lastStatus !== status) {
+    history.transitions.push({
+      timestamp: now,
+      status: status,
+      from: history.lastStatus
+    });
+
+    // Keep only recent transitions (last 24 hours)
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    history.transitions = history.transitions.filter(t => now - t.timestamp < oneDayMs);
+
+    history.lastStatus = status;
+
+    // Check if flapping state changed
+    const currentlyFlapping = isDeviceFlapping(deviceId);
+    if (currentlyFlapping !== history.isFlapping) {
+      history.isFlapping = currentlyFlapping;
+      notifyFlappingStatus(deviceId, snmpDevices[deviceId]?.name || deviceId, 'device', currentlyFlapping);
+    }
+  }
+}
+
+function isPingFlapping(targetId) {
+  if (!settings.flapping || !settings.flapping.enabled) return false;
+
+  const history = pingFlappingHistory[targetId];
+  if (!history || history.transitions.length < 2) return false;
+
+  const now = Date.now();
+  const windowMs = settings.flapping.pingWindowMinutes * 60 * 1000;
+  const threshold = settings.flapping.pingThreshold;
+
+  // Filter transitions within the time window
+  const recentTransitions = history.transitions.filter(t => now - t.timestamp < windowMs);
+
+  // Update history with filtered transitions
+  history.transitions = recentTransitions;
+
+  return recentTransitions.length >= threshold;
+}
+
+function recordPingTransition(targetId, status) {
+  if (!pingFlappingHistory[targetId]) {
+    pingFlappingHistory[targetId] = {
+      transitions: [],
+      isFlapping: false,
+      lastStatus: null
+    };
+  }
+
+  const history = pingFlappingHistory[targetId];
+  const now = Date.now();
+
+  // Only record if status actually changed
+  if (history.lastStatus !== status) {
+    history.transitions.push({
+      timestamp: now,
+      status: status,
+      from: history.lastStatus
+    });
+
+    // Keep only recent transitions (last 24 hours)
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    history.transitions = history.transitions.filter(t => now - t.timestamp < oneDayMs);
+
+    history.lastStatus = status;
+
+    // Check if flapping state changed
+    const currentlyFlapping = isPingFlapping(targetId);
+    if (currentlyFlapping !== history.isFlapping) {
+      history.isFlapping = currentlyFlapping;
+      const target = pingTargets.find(t => t.id === targetId);
+      const targetName = target ? target.name : `Target ${targetId}`;
+      const targetHost = target ? target.host : 'unknown';
+      notifyFlappingStatus(targetId, targetName, 'ping', currentlyFlapping, targetHost);
+    }
+  }
+}
+
+function notifyFlappingStatus(id, name, type, isFlapping, host = '') {
+  if (!settings.flapping || (!settings.flapping.notifyOnFlappingStart && !settings.flapping.notifyOnFlappingStop)) return;
+
+  const timestamp = new Date().toLocaleString('id-ID');
+  const alertKey = `${type}_${id}`;
+
+  if (isFlapping && settings.flapping.notifyOnFlappingStart) {
+    if (!flappingAlerts[alertKey]) {
+      // New flapping detected
+      const message = `🔄 <b>Flapping Detected</b>\n\n` +
+                     `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
+                     `⏰ <b>Time:</b> ${timestamp}\n` +
+                     `⚠️ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is flapping!\n` +
+                     `🚨 <b>Action:</b> Notifications suppressed until stable`;
+
+      sendTelegramMessage(message);
+      notifyFlappingEmail(id, name, type, true, host);
+
+      logEvent('flapping_start', 'warning', name, `${type === 'device' ? 'Device' : 'Ping target'} "${name}" started flapping`, {
+        id: id,
+        name: name,
+        type: type,
+        host: host
+      });
+
+      flappingAlerts[alertKey] = { startTime: Date.now(), isActive: true };
+    }
+  } else if (!isFlapping && settings.flapping.notifyOnFlappingStop) {
+    if (flappingAlerts[alertKey] && flappingAlerts[alertKey].isActive) {
+      // Flapping stopped
+      const duration = Math.round((Date.now() - flappingAlerts[alertKey].startTime) / 1000 / 60);
+      const message = `✅ <b>Flapping Resolved</b>\n\n` +
+                     `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
+                     `⏰ <b>Time:</b> ${timestamp}\n` +
+                     `⏱️ <b>Duration:</b> ${duration} minutes\n` +
+                     `✅ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is now stable\n` +
+                     `📢 <b>Action:</b> Normal notifications resumed`;
+
+      sendTelegramMessage(message);
+      notifyFlappingEmail(id, name, type, false, host, duration);
+
+      logEvent('flapping_stop', 'info', name, `${type === 'device' ? 'Device' : 'Ping target'} "${name}" stopped flapping after ${duration} minutes`, {
+        id: id,
+        name: name,
+        type: type,
+        host: host,
+        durationMinutes: duration
+      });
+
+      flappingAlerts[alertKey].isActive = false;
+    }
+  }
+}
+
+function notifyFlappingEmail(id, name, type, isFlapping, host = '', duration = null) {
+  if (!settings.email || !settings.email.smtp || !settings.email.smtp.host) return;
+
+  const timestamp = new Date().toLocaleString('id-ID');
+  let subject, htmlContent;
+
+  if (isFlapping) {
+    subject = `🔄 Flapping Detected - ${name}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">🔄 Flapping Detected</h2>
+        <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 ${type === 'device' ? 'Device' : 'Ping Target'}:</strong> ${name}${host ? ` (${host})` : ''}</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>⚠️ Status:</strong> ${type === 'device' ? 'Device' : 'Target'} is flapping!</p>
+          <p><strong>🚨 Action:</strong> Notifications suppressed until stable</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+  } else {
+    subject = `✅ Flapping Resolved - ${name}`;
+    htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">✅ Flapping Resolved</h2>
+        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>📍 ${type === 'device' ? 'Device' : 'Ping Target'}:</strong> ${name}${host ? ` (${host})` : ''}</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>⏱️ Duration:</strong> ${duration} minutes</p>
+          <p><strong>✅ Status:</strong> ${type === 'device' ? 'Device' : 'Target'} is now stable</p>
+          <p><strong>📢 Action:</strong> Normal notifications resumed</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This alert was generated by SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+  }
+
+  sendEmail(subject, htmlContent);
 }
 
 // Load SNMP devices config
@@ -371,6 +824,7 @@ config.snmpDevices.forEach(device => {
 // Express configuration
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.set('view cache', false); // Disable view caching for development
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -396,12 +850,32 @@ app.use(requireAuth);
 let settings = {
   pollingInterval: 300000, // 5 minutes in milliseconds
   pingInterval: 30000, // 30 seconds in milliseconds
-  dataRetention: 365, // days (12 months)
+  dataRetention: 730, // days (24 months)
   influxdb: {
     url: 'http://localhost:8086',
     org: 'indobsd',
     bucket: 'graphts',
     token: 'Sag1KBQNatpHmaMDoCDLB1Vrt-QAMTfwL_K13gRYjUihTrzlRSOdoDB9HwH6imIJpSMz4XgfG9AEAL4FtwUZpQ=='
+  },
+  email: {
+    enabled: false,
+    smtpHost: '',
+    smtpPort: 587,
+    smtpSecure: false,
+    smtpUser: '',
+    smtpPass: '',
+    fromEmail: '',
+    toEmail: '',
+    notifyOnDeviceDown: true,
+    notifyOnDeviceUp: true,
+    notifyOnHighCpu: true,
+    cpuThreshold: 80,
+    notifyOnInterfaceDown: false,
+    notifyOnPingDown: true,
+    notifyOnPingUp: true,
+    notifyOnPingTimeout: true,
+    notifyOnPingHighLatency: true,
+    pingLatencyThreshold: 50
   }
 };
 
@@ -417,6 +891,42 @@ if (fs.existsSync(settingsFile)) {
       org: 'indobsd',
       bucket: 'graphts',
       token: 'Sag1KBQNatpHmaMDoCDLB1Vrt-QAMTfwL_K13gRYjUihTrzlRSOdoDB9HwH6imIJpSMz4XgfG9AEAL4FtwUZpQ=='
+    };
+  }
+  // Ensure email object exists
+  if (!settings.email) {
+    settings.email = {
+      enabled: false,
+      smtpHost: '',
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: '',
+      smtpPass: '',
+      fromEmail: '',
+      toEmail: '',
+      notifyOnDeviceDown: true,
+      notifyOnDeviceUp: true,
+      notifyOnHighCpu: true,
+      cpuThreshold: 80,
+      notifyOnInterfaceDown: false,
+      notifyOnPingDown: true,
+      notifyOnPingUp: true,
+      notifyOnPingTimeout: true,
+      notifyOnPingHighLatency: true,
+      pingLatencyThreshold: 50
+    };
+  }
+  // Ensure flapping object exists
+  if (!settings.flapping) {
+    settings.flapping = {
+      enabled: true,
+      deviceThreshold: 5,
+      deviceWindowMinutes: 10,
+      pingThreshold: 3,
+      pingWindowMinutes: 5,
+      suppressNotifications: true,
+      notifyOnFlappingStart: true,
+      notifyOnFlappingStop: true
     };
   }
 } else {
@@ -438,6 +948,25 @@ if (settings.telegram && settings.telegram.enabled && settings.telegram.botToken
   }
 }
 
+// Email transporter initialization
+let emailTransporter = null;
+if (settings.email && settings.email.enabled && settings.email.smtpHost && settings.email.smtpUser && settings.email.smtpPass) {
+  try {
+    emailTransporter = nodemailer.createTransporter({
+      host: settings.email.smtpHost,
+      port: settings.email.smtpPort,
+      secure: settings.email.smtpSecure,
+      auth: {
+        user: settings.email.smtpUser,
+        pass: settings.email.smtpPass
+      }
+    });
+    console.log('[EMAIL] SMTP transporter initialized successfully');
+  } catch (error) {
+    console.error('[EMAIL] Failed to initialize SMTP transporter:', error.message);
+  }
+}
+
 // Ping configuration
 let pingTargets = [
   { id: 1, name: 'Google DNS', host: '8.8.8.8', group: 'DNS', enabled: true },
@@ -447,6 +976,14 @@ let pingTargets = [
 
 // Ping status tracking for notifications
 let pingStatusHistory = {}; // Track previous ping status for each target
+
+// Device status tracking for notifications
+let deviceStatusHistory = {}; // Track previous device status for each device
+
+// Flapping detection tracking
+let deviceFlappingHistory = {}; // Track device state transitions for flapping detection
+let pingFlappingHistory = {}; // Track ping state transitions for flapping detection
+let flappingAlerts = {}; // Track active flapping alerts to avoid duplicate notifications
 
 // Load or create ping targets file
 const pingTargetsFile = './ping-targets.json';
@@ -539,6 +1076,92 @@ cleanupOldPingData();
 // Schedule cleanup every 24 hours
 setInterval(cleanupOldPingData, 24 * 60 * 60 * 1000);
 
+// History management functions
+let eventHistory = [];
+const historyFile = './history.json';
+
+// Load history from file
+function loadHistory() {
+  try {
+    if (fs.existsSync(historyFile)) {
+      const data = fs.readFileSync(historyFile, 'utf8');
+      eventHistory = JSON.parse(data);
+    } else {
+      eventHistory = [];
+      saveHistory();
+    }
+  } catch (err) {
+    console.error('Error loading history:', err);
+    eventHistory = [];
+  }
+}
+
+// Save history to file
+function saveHistory() {
+  try {
+    fs.writeFileSync(historyFile, JSON.stringify(eventHistory, null, 2));
+  } catch (err) {
+    console.error('Error saving history:', err);
+  }
+}
+
+// Add event to history
+function logEvent(type, severity, source, message, details = null) {
+  const event = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    type: type,
+    severity: severity,
+    source: source,
+    message: message,
+    details: details
+  };
+
+  eventHistory.unshift(event); // Add to beginning of array
+
+  // Keep only last 10000 events to prevent file from growing too large
+  if (eventHistory.length > 10000) {
+    eventHistory = eventHistory.slice(0, 10000);
+  }
+
+  saveHistory();
+
+  // Send Telegram notification if enabled
+  if (settings.telegram && settings.telegram.enabled) {
+    sendEventNotification(event);
+  }
+
+  console.log(`[HISTORY] ${severity.toUpperCase()}: ${message}`);
+}
+
+// Send event notification via Telegram
+function sendEventNotification(event) {
+  if (!telegramBot || !settings.telegram.chatId) return;
+
+  let emoji = '';
+  switch (event.severity) {
+    case 'critical': emoji = '🚨'; break;
+    case 'error': emoji = '❌'; break;
+    case 'warning': emoji = '⚠️'; break;
+    case 'info': emoji = 'ℹ️'; break;
+  }
+
+  const message = `${emoji} **${event.severity.toUpperCase()}**\n\n` +
+    `**Event:** ${event.type.replace(/_/g, ' ').toUpperCase()}\n` +
+    `**Source:** ${event.source}\n` +
+    `**Time:** ${new Date(event.timestamp).toLocaleString()}\n` +
+    `**Message:** ${event.message}`;
+
+  try {
+    telegramBot.sendMessage(settings.telegram.chatId, message, { parse_mode: 'Markdown' });
+  } catch (err) {
+    console.error('Error sending Telegram notification:', err);
+  }
+}
+
+// Load history on startup
+loadHistory();
+
 // Route for dashboard page
 app.get('/', (req, res) => {
   // Get all interfaces from all devices for total count
@@ -583,6 +1206,11 @@ app.get('/settings', (req, res) => {
     pollingIntervalSeconds: settings.pollingInterval / 1000,
     pingIntervalSeconds: settings.pingInterval ? settings.pingInterval / 1000 : 30
   });
+});
+
+// Route for history page
+app.get('/history', (req, res) => {
+  res.render('history');
 });
 
 // Route for about page
@@ -881,7 +1509,7 @@ app.get('/api/settings', (req, res) => {
   res.json({
     pollingInterval: settings.pollingInterval,
     pollingIntervalSeconds: settings.pollingInterval / 1000,
-    dataRetention: settings.dataRetention || 365
+    dataRetention: settings.dataRetention || 730
   });
 });
 
@@ -983,10 +1611,14 @@ app.post('/api/settings/ping-notifications', (req, res) => {
 // API to test InfluxDB connection
 app.post('/api/settings/influxdb/test', async (req, res) => {
   try {
-    const { url, org, bucket, token } = req.body;
+    let { url, org, bucket, token } = req.body;
     
+    // If no parameters provided, use current settings
     if (!url || !org || !bucket || !token) {
-      return res.status(400).json({ error: 'All fields are required' });
+      url = settings.influxdb.url;
+      org = settings.influxdb.org;
+      bucket = settings.influxdb.bucket;
+      token = settings.influxdb.token;
     }
     
     // Create temporary InfluxDB client
@@ -1165,6 +1797,225 @@ app.post('/api/settings/telegram/test', async (req, res) => {
   }
 });
 
+// API to save email settings
+app.post('/api/settings/email', (req, res) => {
+  try {
+    const { 
+      enabled, 
+      smtpHost, 
+      smtpPort, 
+      smtpSecure, 
+      smtpUser, 
+      smtpPass, 
+      fromEmail, 
+      toEmail,
+      notifyOnDeviceDown, 
+      notifyOnDeviceUp, 
+      notifyOnHighCpu, 
+      cpuThreshold, 
+      notifyOnInterfaceDown,
+      notifyOnPingDown,
+      notifyOnPingUp,
+      notifyOnPingTimeout,
+      notifyOnPingHighLatency,
+      pingLatencyThreshold
+    } = req.body;
+    
+    if (!settings.email) {
+      settings.email = {};
+    }
+    
+    settings.email.enabled = enabled === true || enabled === 'true';
+    settings.email.smtpHost = smtpHost || '';
+    settings.email.smtpPort = parseInt(smtpPort) || 587;
+    settings.email.smtpSecure = smtpSecure === true || smtpSecure === 'true';
+    settings.email.smtpUser = smtpUser || '';
+    settings.email.smtpPass = smtpPass || '';
+    settings.email.fromEmail = fromEmail || '';
+    settings.email.toEmail = toEmail || '';
+    settings.email.notifyOnDeviceDown = notifyOnDeviceDown === true || notifyOnDeviceDown === 'true';
+    settings.email.notifyOnDeviceUp = notifyOnDeviceUp === true || notifyOnDeviceUp === 'true';
+    settings.email.notifyOnHighCpu = notifyOnHighCpu === true || notifyOnHighCpu === 'true';
+    settings.email.cpuThreshold = parseInt(cpuThreshold) || 80;
+    settings.email.notifyOnInterfaceDown = notifyOnInterfaceDown === true || notifyOnInterfaceDown === 'true';
+    settings.email.notifyOnPingDown = notifyOnPingDown === true || notifyOnPingDown === 'true';
+    settings.email.notifyOnPingUp = notifyOnPingUp === true || notifyOnPingUp === 'true';
+    settings.email.notifyOnPingTimeout = notifyOnPingTimeout === true || notifyOnPingTimeout === 'true';
+    settings.email.notifyOnPingHighLatency = notifyOnPingHighLatency === true || notifyOnPingHighLatency === 'true';
+    settings.email.pingLatencyThreshold = parseInt(pingLatencyThreshold) || 50;
+    
+    saveSettings();
+    
+    // Reinitialize email transporter if settings changed
+    if (settings.email.enabled && settings.email.smtpHost && settings.email.smtpUser && settings.email.smtpPass) {
+      try {
+        emailTransporter = nodemailer.createTransporter({
+          host: settings.email.smtpHost,
+          port: settings.email.smtpPort,
+          secure: settings.email.smtpSecure,
+          auth: {
+            user: settings.email.smtpUser,
+            pass: settings.email.smtpPass
+          }
+        });
+        console.log('[EMAIL] SMTP transporter reinitialized successfully');
+      } catch (error) {
+        console.error('[EMAIL] Failed to reinitialize SMTP transporter:', error.message);
+      }
+    } else {
+      emailTransporter = null;
+      console.log('[EMAIL] SMTP transporter disabled');
+    }
+    
+    res.json({
+      success: true,
+      message: 'Email settings saved successfully',
+      email: {
+        enabled: settings.email.enabled,
+        smtpHost: settings.email.smtpHost,
+        smtpPort: settings.email.smtpPort,
+        smtpSecure: settings.email.smtpSecure,
+        smtpUser: settings.email.smtpUser ? '***' : '', // Don't send password back
+        smtpPass: '', // Never send password back
+        fromEmail: settings.email.fromEmail,
+        toEmail: settings.email.toEmail,
+        notifyOnDeviceDown: settings.email.notifyOnDeviceDown,
+        notifyOnDeviceUp: settings.email.notifyOnDeviceUp,
+        notifyOnHighCpu: settings.email.notifyOnHighCpu,
+        cpuThreshold: settings.email.cpuThreshold,
+        notifyOnInterfaceDown: settings.email.notifyOnInterfaceDown,
+        notifyOnPingDown: settings.email.notifyOnPingDown,
+        notifyOnPingUp: settings.email.notifyOnPingUp,
+        notifyOnPingTimeout: settings.email.notifyOnPingTimeout,
+        notifyOnPingHighLatency: settings.email.notifyOnPingHighLatency,
+        pingLatencyThreshold: settings.email.pingLatencyThreshold
+      }
+    });
+  } catch (err) {
+    console.error('Error saving email settings:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// API to test email configuration
+app.post('/api/settings/email/test', async (req, res) => {
+  try {
+    if (!emailTransporter || !settings.email || !settings.email.enabled || !settings.email.toEmail) {
+      return res.status(400).json({ error: 'Email is not configured or enabled' });
+    }
+    
+    const timestamp = new Date().toLocaleString('id-ID');
+    const subject = '🧪 Email Test - SMon Monitoring System';
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">🧪 Email Test</h2>
+        <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>✅ Status:</strong> Email configuration is working correctly!</p>
+          <p><strong>⏰ Time:</strong> ${timestamp}</p>
+          <p><strong>🤖 System:</strong> SMon Monitoring Dashboard</p>
+          <p><strong>📧 SMTP Host:</strong> ${settings.email.smtpHost}:${settings.email.smtpPort}</p>
+          <p><strong>🔒 Secure:</strong> ${settings.email.smtpSecure ? 'Yes' : 'No'}</p>
+        </div>
+        <p style="color: #666; font-size: 12px;">This is a test email from SMon - SNMP Monitoring Dashboard</p>
+      </div>
+    `;
+    
+    await sendEmail(subject, htmlContent);
+    
+    res.json({
+      success: true,
+      message: 'Test email sent successfully'
+    });
+  } catch (err) {
+    console.error('Error testing email configuration:', err);
+    res.status(500).json({ error: 'Failed to send test email: ' + err.message });
+  }
+});
+
+// API to save flapping settings
+app.post('/api/settings/flapping', (req, res) => {
+  try {
+    const flappingSettings = req.body;
+
+    // Validate flapping settings
+    if (flappingSettings.deviceThreshold < 2 || flappingSettings.deviceThreshold > 20) {
+      return res.status(400).json({ error: 'Device threshold must be between 2 and 20' });
+    }
+    if (flappingSettings.deviceWindowMinutes < 1 || flappingSettings.deviceWindowMinutes > 60) {
+      return res.status(400).json({ error: 'Device window must be between 1 and 60 minutes' });
+    }
+    if (flappingSettings.pingThreshold < 2 || flappingSettings.pingThreshold > 20) {
+      return res.status(400).json({ error: 'Ping threshold must be between 2 and 20' });
+    }
+    if (flappingSettings.pingWindowMinutes < 1 || flappingSettings.pingWindowMinutes > 60) {
+      return res.status(400).json({ error: 'Ping window must be between 1 and 60 minutes' });
+    }
+
+    // Update settings
+    settings.flapping = {
+      enabled: flappingSettings.enabled || false,
+      deviceThreshold: flappingSettings.deviceThreshold,
+      deviceWindowMinutes: flappingSettings.deviceWindowMinutes,
+      pingThreshold: flappingSettings.pingThreshold,
+      pingWindowMinutes: flappingSettings.pingWindowMinutes,
+      suppressNotifications: flappingSettings.suppressNotifications || false,
+      notifyOnFlappingStart: flappingSettings.notifyOnFlappingStart || false,
+      notifyOnFlappingStop: flappingSettings.notifyOnFlappingStop || false
+    };
+
+    saveSettings();
+
+    res.json({
+      success: true,
+      message: 'Flapping settings saved successfully',
+      settings: settings.flapping
+    });
+  } catch (err) {
+    console.error('Error saving flapping settings:', err);
+    res.status(500).json({ error: 'Failed to save flapping settings: ' + err.message });
+  }
+});
+
+// API to get flapping status
+app.get('/api/flapping/status', (req, res) => {
+  try {
+    const flappingStatus = {
+      deviceFlapping: {},
+      pingFlapping: {},
+      activeAlerts: flappingAlerts
+    };
+
+    // Get device flapping status
+    Object.keys(deviceFlappingHistory).forEach(deviceId => {
+      const history = deviceFlappingHistory[deviceId];
+      flappingStatus.deviceFlapping[deviceId] = {
+        isFlapping: history.isFlapping,
+        transitionCount: history.transitions.length,
+        lastTransition: history.transitions.length > 0 ? history.transitions[history.transitions.length - 1] : null,
+        deviceName: snmpDevices[deviceId]?.name || 'Unknown'
+      };
+    });
+
+    // Get ping flapping status
+    Object.keys(pingFlappingHistory).forEach(targetId => {
+      const history = pingFlappingHistory[targetId];
+      const target = pingTargets.find(t => t.id === targetId);
+      flappingStatus.pingFlapping[targetId] = {
+        isFlapping: history.isFlapping,
+        transitionCount: history.transitions.length,
+        lastTransition: history.transitions.length > 0 ? history.transitions[history.transitions.length - 1] : null,
+        targetName: target ? target.name : 'Unknown',
+        targetHost: target ? target.host : 'unknown'
+      };
+    });
+
+    res.json(flappingStatus);
+  } catch (err) {
+    console.error('Error getting flapping status:', err);
+    res.status(500).json({ error: 'Failed to get flapping status: ' + err.message });
+  }
+});
+
 // API to discover interfaces via SNMP walk
 app.post('/api/discover-interfaces', (req, res) => {
   try {
@@ -1274,6 +2125,15 @@ app.post('/api/devices', (req, res) => {
     });
     
     console.log(`Device added: ${name} (${host}) - Vendor: ${newDevice.vendor}`);
+    
+    // Log device addition event
+    logEvent('device_added', 'info', 'System', `Device "${name}" (${host}) has been added to monitoring`, {
+      deviceId: id,
+      deviceName: name,
+      host: host,
+      vendor: newDevice.vendor
+    });
+    
     res.json(newDevice);
   } catch (err) {
     console.error('Error adding device:', err);
@@ -1341,6 +2201,14 @@ app.delete('/api/devices/:deviceId', async (req, res) => {
     }
 
     console.log(`[DELETE DEVICE] Device deleted successfully: ${deviceId} (${device.name})`);
+    
+    // Log device removal event
+    logEvent('device_removed', 'warning', 'System', `Device "${device.name}" (${device.host}) has been removed from monitoring`, {
+      deviceId: deviceId,
+      deviceName: device.name,
+      host: device.host
+    });
+    
     res.json({
       message: 'Device deleted successfully',
       deviceId: deviceId,
@@ -1616,6 +2484,28 @@ function pollSNMP() {
     Object.keys(snmpDevices).forEach(deviceId => {
     const device = snmpDevices[deviceId];
     
+    // Track device status - assume device is online at start of polling
+    const previousStatus = deviceStatusHistory[deviceId];
+    const currentStatus = { alive: true, lastCheck: Date.now() };
+    
+    // Initialize status history if not exists
+    if (!deviceStatusHistory[deviceId]) {
+      deviceStatusHistory[deviceId] = currentStatus;
+    }
+    
+    // Check for status changes (device coming online)
+    if (previousStatus && !previousStatus.alive) {
+      notifyDeviceStatus(deviceId, device.name, 'up', 'Device responded to SNMP polling');
+      logEvent('device_online', 'info', device.name, `Device "${device.name}" (${device.host}) is now online`, {
+        deviceId: deviceId,
+        deviceName: device.name,
+        host: device.host
+      });
+    }
+    
+    // Update status history
+    deviceStatusHistory[deviceId] = currentStatus;
+    
     // Skip if no interfaces selected
     if (!device.selectedInterfaces || device.selectedInterfaces.length === 0) {
       console.log(`[${deviceId}] No interfaces selected, skipping polling`);
@@ -1760,10 +2650,41 @@ function pollSNMP() {
   }
 }
 
+// Function to check for device timeouts and mark offline
+function checkDeviceTimeouts() {
+  const timeoutThreshold = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+  
+  Object.keys(snmpDevices).forEach(deviceId => {
+    const device = snmpDevices[deviceId];
+    const status = deviceStatusHistory[deviceId];
+    
+    if (status && status.alive) {
+      const timeSinceLastCheck = now - status.lastCheck;
+      
+      if (timeSinceLastCheck > timeoutThreshold) {
+        // Device has not responded for more than threshold, mark as offline
+        deviceStatusHistory[deviceId] = {
+          alive: false,
+          lastCheck: now
+        };
+        
+        notifyDeviceStatus(deviceId, device.name, 'down', `No response for ${Math.round(timeSinceLastCheck / 60000)} minutes`);
+        logEvent('device_offline', 'error', device.name, `Device "${device.name}" (${device.host}) is offline - no response for ${Math.round(timeSinceLastCheck / 60000)} minutes`, {
+          deviceId: deviceId,
+          deviceName: device.name,
+          host: device.host,
+          timeSinceLastResponse: timeSinceLastCheck
+        });
+      }
+    }
+  });
+}
+
 // Data retention cleanup function
 function cleanupOldData() {
   try {
-    const retentionDays = settings.dataRetention || 365;
+    const retentionDays = settings.dataRetention || 730;
     const cutoffTime = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
     const cutoffIso = cutoffTime.toISOString();
     
@@ -1823,6 +2744,9 @@ function restartPolling() {
   }
   startPolling();
 }
+
+// Start SNMP polling
+let pollingIntervalId = null;
 
 // Start polling with configured interval
 startPolling();
@@ -2063,9 +2987,246 @@ app.get('/api/ping-history/:targetId', async (req, res) => {
   }
 });
 
+// API endpoint for event history
+app.get('/api/history', (req, res) => {
+  try {
+    res.json({
+      events: eventHistory
+    });
+  } catch (err) {
+    console.error('Error fetching event history:', err);
+    res.status(500).json({ error: 'Failed to fetch event history' });
+  }
+});
+
+// API endpoint to clear event history
+app.delete('/api/history', (req, res) => {
+  try {
+    eventHistory = [];
+    saveHistory();
+    res.json({
+      success: true,
+      message: 'Event history cleared successfully'
+    });
+  } catch (err) {
+    console.error('Error clearing event history:', err);
+    res.status(500).json({ error: 'Failed to clear event history' });
+  }
+});
+
+// Start SNMP polling
+
+function startPolling() {
+  if (pollingIntervalId) {
+    clearInterval(pollingIntervalId);
+  }
+  
+  console.log(`[POLLING] Starting SNMP polling with interval: ${settings.pollingInterval}ms`);
+  pollingIntervalId = setInterval(pollSNMP, settings.pollingInterval);
+  
+  // Also start device timeout checking
+  setInterval(checkDeviceTimeouts, 60000); // Check every minute
+  
+  // Run initial poll
+  setTimeout(pollSNMP, 1000);
+}
+
+function restartPolling() {
+  console.log('[POLLING] Restarting polling with new interval');
+  startPolling();
+}
+
+// Start polling on application startup
+startPolling();
+
+const webpush = require('web-push');
+
+// VAPID keys for push notifications (generate these in production)
+const vapidKeys = {
+  publicKey: 'BMrGTYW-3IXNMtQRgIoqSs9qzf4yQaDFmB86kBdhebfJr1BNa1ViUzt7UwEtz3uGAmHtqwSvkW_0frk6tnY2CUM',
+  privateKey: 'j3LPTIziZlw3bh1O8GnTsbL0gt0qOreFnQ0sy0RdNYY'
+};
+
+// Configure web-push
+webpush.setVapidDetails(
+  'mailto:admin@smon.local',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
+
+// Store push subscriptions (in production, use a database)
+let pushSubscriptions = [];
+
+// API to get VAPID public key
+app.get('/api/push-key', (req, res) => {
+  res.json({
+    publicKey: vapidKeys.publicKey
+  });
+});
+
+// API to subscribe to push notifications
+app.post('/api/push-subscribe', (req, res) => {
+  try {
+    const subscription = req.body;
+
+    // Check if subscription already exists
+    const existingIndex = pushSubscriptions.findIndex(sub =>
+      sub.endpoint === subscription.endpoint
+    );
+
+    if (existingIndex === -1) {
+      pushSubscriptions.push(subscription);
+      console.log('[PUSH] New subscription added');
+    } else {
+      // Update existing subscription
+      pushSubscriptions[existingIndex] = subscription;
+      console.log('[PUSH] Subscription updated');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[PUSH] Subscription error:', error);
+    res.status(500).json({ error: 'Failed to subscribe' });
+  }
+});
+
+// API to send push notification (for testing)
+app.post('/api/push-test', (req, res) => {
+  try {
+    const { title, body, type } = req.body;
+
+    sendPushNotificationToAll({
+      title: title || 'Test Notification',
+      body: body || 'This is a test push notification from SMon',
+      type: type || 'test'
+    });
+
+    res.json({ success: true, message: 'Test notification sent' });
+  } catch (error) {
+    console.error('[PUSH] Test notification error:', error);
+    res.status(500).json({ error: 'Failed to send test notification' });
+  }
+});
+
+// Function to send push notification to all subscribers
+function sendPushNotificationToAll(data) {
+  const payload = JSON.stringify({
+    title: data.title,
+    body: data.body,
+    type: data.type,
+    url: data.url || '/',
+    timestamp: Date.now()
+  });
+
+  pushSubscriptions.forEach((subscription, index) => {
+    webpush.sendNotification(subscription, payload)
+      .catch((error) => {
+        console.error('[PUSH] Send failed, removing subscription:', error);
+        // Remove invalid subscriptions
+        pushSubscriptions.splice(index, 1);
+      });
+  });
+}
+
+// Enhanced notification functions to include push notifications
+const originalNotifyDeviceStatus = notifyDeviceStatus;
+notifyDeviceStatus = function(deviceId, deviceName, status, details = '') {
+  // Call original function
+  originalNotifyDeviceStatus(deviceId, deviceName, status, details);
+
+  // Send push notification
+  if (pushSubscriptions.length > 0) {
+    let title, body, type;
+    if (status === 'up') {
+      title = 'Device Online';
+      body = `${deviceName} is back online`;
+      type = 'device_up';
+    } else if (status === 'down') {
+      title = 'Device Offline';
+      body = `${deviceName} is offline`;
+      type = 'device_down';
+    }
+
+    if (title) {
+      sendPushNotificationToAll({
+        title,
+        body,
+        type,
+        url: '/devices'
+      });
+    }
+  }
+};
+
+const originalNotifyHighCpu = notifyHighCpu;
+notifyHighCpu = function(deviceId, deviceName, cpuValue) {
+  // Call original function
+  originalNotifyHighCpu(deviceId, deviceName, cpuValue);
+
+  // Send push notification
+  if (pushSubscriptions.length > 0) {
+    sendPushNotificationToAll({
+      title: 'High CPU Alert',
+      body: `${deviceName} CPU usage: ${cpuValue}%`,
+      type: 'high_cpu',
+      url: '/devices'
+    });
+  }
+};
+
+const originalNotifyPingStatus = notifyPingStatus;
+notifyPingStatus = function(targetId, targetName, targetHost, status, latency = null, packetLoss = null) {
+  // Call original function
+  originalNotifyPingStatus(targetId, targetName, targetHost, status, latency, packetLoss);
+
+  // Send push notification
+  if (pushSubscriptions.length > 0) {
+    let title, body, type;
+    if (status === 'down') {
+      title = 'Ping Target Down';
+      body = `${targetName} (${targetHost}) is unreachable`;
+      type = 'ping_down';
+    } else if (status === 'up') {
+      title = 'Ping Target Up';
+      body = `${targetName} (${targetHost}) is back online`;
+      type = 'ping_up';
+    } else if (status === 'high_latency') {
+      title = 'High Latency Alert';
+      body = `${targetName} latency: ${latency}ms`;
+      type = 'high_latency';
+    }
+
+    if (title) {
+      sendPushNotificationToAll({
+        title,
+        body,
+        type,
+        url: '/ping'
+      });
+    }
+  }
+};
+
+// API for offline data sync
+app.post('/api/sync-offline-data', (req, res) => {
+  try {
+    const offlineData = req.body;
+    console.log('[SYNC] Received offline data:', offlineData);
+
+    // Process offline data (in production, save to database)
+    // For now, just log it
+    logEvent('offline_sync', 'info', 'System', `Offline data synced: ${JSON.stringify(offlineData)}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[SYNC] Offline data sync error:', error);
+    res.status(500).json({ error: 'Failed to sync offline data' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
-  
+
   // Start ping monitoring immediately
   startPingMonitoring();
 });

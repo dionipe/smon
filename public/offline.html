@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - SMon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100 min-h-screen flex items-center justify-center">
+  <div class="max-w-md mx-auto text-center p-8">
+    <!-- Offline Icon -->
+    <div class="w-24 h-24 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+      <i class="fas fa-wifi-slash text-white text-3xl"></i>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-3xl font-bold text-white mb-4">You're Offline</h1>
+
+    <!-- Description -->
+    <p class="text-gray-400 mb-8 leading-relaxed">
+      It looks like you're not connected to the internet. Some features may not be available, but you can still view cached data and basic monitoring information.
+    </p>
+
+    <!-- Offline Features -->
+    <div class="bg-slate-800 rounded-xl p-6 mb-8 border border-slate-700">
+      <h3 class="text-lg font-semibold text-white mb-4 flex items-center justify-center gap-2">
+        <i class="fas fa-database text-blue-400"></i>
+        Available Offline
+      </h3>
+      <div class="space-y-3 text-left">
+        <div class="flex items-center gap-3 text-gray-300">
+          <i class="fas fa-check-circle text-green-400 w-5"></i>
+          <span>View cached device status</span>
+        </div>
+        <div class="flex items-center gap-3 text-gray-300">
+          <i class="fas fa-check-circle text-green-400 w-5"></i>
+          <span>Access recent event history</span>
+        </div>
+        <div class="flex items-center gap-3 text-gray-300">
+          <i class="fas fa-check-circle text-green-400 w-5"></i>
+          <span>View system configuration</span>
+        </div>
+        <div class="flex items-center gap-3 text-gray-300">
+          <i class="fas fa-clock text-yellow-400 w-5"></i>
+          <span>Real-time data (when reconnected)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="space-y-4">
+      <button onclick="window.location.reload()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+        <i class="fas fa-sync-alt mr-2"></i>
+        Try Again
+      </button>
+
+      <button onclick="checkConnection()" class="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 border border-slate-600 hover:border-slate-500">
+        <i class="fas fa-wifi mr-2"></i>
+        Check Connection
+      </button>
+    </div>
+
+    <!-- Connection Status -->
+    <div id="connection-status" class="mt-6 text-sm text-gray-500">
+      Checking connection...
+    </div>
+  </div>
+
+  <script>
+    // Check connection status
+    function checkConnection() {
+      const statusEl = document.getElementById('connection-status');
+
+      if (navigator.onLine) {
+        statusEl.innerHTML = '<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i>Connected to internet</span>';
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        statusEl.innerHTML = '<span class="text-red-400"><i class="fas fa-times-circle mr-1"></i>Still offline</span>';
+      }
+    }
+
+    // Check connection on page load
+    window.addEventListener('load', () => {
+      checkConnection();
+    });
+
+    // Listen for online/offline events
+    window.addEventListener('online', () => {
+      checkConnection();
+    });
+
+    window.addEventListener('offline', () => {
+      const statusEl = document.getElementById('connection-status');
+      statusEl.innerHTML = '<span class="text-red-400"><i class="fas fa-times-circle mr-1"></i>Connection lost</span>';
+    });
+
+    // Periodic connection check
+    setInterval(() => {
+      if (navigator.onLine) {
+        checkConnection();
+      }
+    }, 30000); // Check every 30 seconds
+  </script>
+</body>
+</html>

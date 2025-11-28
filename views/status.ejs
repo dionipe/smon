@@ -291,12 +291,7 @@
         const dbResponse = await fetch('/api/settings/influxdb/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: 'http://localhost:8086',
-            org: 'indobsd',
-            bucket: 'graphts',
-            token: 'test'
-          })
+          body: JSON.stringify({})
         }).catch(() => ({ ok: false }));
 
         statusData.database = dbResponse.ok ?
