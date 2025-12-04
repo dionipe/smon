@@ -1226,7 +1226,7 @@ let pingFlappingHistory = {}; // Track ping state transitions for flapping detec
 let flappingAlerts = {}; // Track active flapping alerts to avoid duplicate notifications
 
 // Load or create ping targets file
-const pingTargetsFile = './ping-targets.json';
+const pingTargetsFile = './data/ping-targets.json';
 if (fs.existsSync(pingTargetsFile)) {
   pingTargets = JSON.parse(fs.readFileSync(pingTargetsFile, 'utf8'));
 } else {
@@ -1343,7 +1343,7 @@ function initializeTopologyPingTargets() {
 
 function savePingTargets() {
   try {
-    const pingTargetsFile = './ping-targets.json';
+    const pingTargetsFile = './data/ping-targets.json';
     fs.writeFileSync(pingTargetsFile, JSON.stringify(pingTargets, null, 2));
   } catch (err) {
     console.error('Error saving ping targets:', err.message);

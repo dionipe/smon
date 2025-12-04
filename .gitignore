@@ -13,6 +13,9 @@ pids
 # Ping monitoring data
 ping-history.json
 
+# Ping targets (user-specific configuration)
+data/ping-targets.json
+
 # Topology data (user-specific configuration)
 data/topology.json
 

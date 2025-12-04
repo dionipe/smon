@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "Google DNS",
+    "host": "8.8.8.8",
+    "group": "DNS",
+    "enabled": true
+  },
+  {
+    "id": 2,
+    "name": "Cloudflare DNS",
+    "host": "1.1.1.1",
+    "group": "DNS",
+    "enabled": true
+  },
+  {
+    "id": 3,
+    "name": "Local Gateway",
+    "host": "192.168.1.1",
+    "group": "Local",
+    "enabled": true
+  },
+  {
+    "id": 4,
+    "name": "OpenDNS",
+    "host": "208.67.222.222",
+    "group": "DNS",
+    "enabled": true
+  },
+  {
+    "id": 100,
+    "name": "Core Router",
+    "host": "172.16.0.1",
+    "group": "Topology",
+    "enabled": true,
+    "sourceNodeId": "core-router-1",
+    "probeType": "ping"
+  },
+  {
+    "id": 101,
+    "name": "Distribution Switch",
+    "host": "172.16.0.2",
+    "group": "Topology",
+    "enabled": true,
+    "sourceNodeId": "dist-switch-1",
+    "probeType": "ping"
+  },
+  {
+    "id": 102,
+    "name": "Access Point 1",
+    "host": "192.168.10.1",
+    "group": "Topology",
+    "enabled": true,
+    "sourceNodeId": "ap-1",
+    "probeType": "ping"
+  },
+  {
+    "id": 103,
+    "name": "Server-01",
+    "host": "192.168.20.10",
+    "group": "Topology",
+    "enabled": true,
+    "sourceNodeId": "server-01",
+    "probeType": "ping"
+  }
+]
