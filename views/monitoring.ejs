@@ -344,7 +344,7 @@
     let currentDevice = '<%= selectedDevice %>';
     let selectedInterfaces = [];
     let chartInstances = {}; // Store chart instances for cleanup
-    let pollingIntervalMs = <%= pollingIntervalSeconds * 1000 %>; // Auto-refresh interval from settings
+    let pollingIntervalMs = '<%= pollingIntervalSeconds * 1000 %>'; // Auto-refresh interval from settings
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {

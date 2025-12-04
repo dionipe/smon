@@ -264,6 +264,12 @@ function processRxData(deviceId, device, iface, rxValue, timestamp = new Date())
     // Handle counter rollover and get the actual delta
     const rxDelta = handleCounterRollover(deviceId, iface, 'rx', rxValue);
     
+    // Skip writing for first reading (delta = 0) to avoid 0 Mbps drop on service restart
+    if (rxDelta === 0) {
+      console.log(`[${deviceId}] RX first reading for ${iface.name}, skipping write`);
+      return;
+    }
+    
     // Log high-traffic interfaces for debugging
     if (rxDelta > 500000000) { // > 500MB delta
       const deltaGb = (rxDelta / 1000000000).toFixed(2);
@@ -303,6 +309,12 @@ function processTxData(deviceId, device, iface, txValue, timestamp = new Date())
   try {
     // Handle counter rollover and get the actual delta
     const txDelta = handleCounterRollover(deviceId, iface, 'tx', txValue);
+    
+    // Skip writing for first reading (delta = 0) to avoid 0 Mbps drop on service restart
+    if (txDelta === 0) {
+      console.log(`[${deviceId}] TX first reading for ${iface.name}, skipping write`);
+      return;
+    }
     
     // Log high-traffic interfaces for debugging
     if (txDelta > 500000000) { // > 500MB delta
