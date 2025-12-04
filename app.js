@@ -2988,6 +2988,7 @@ app.post('/api/devices/:deviceId/select-interfaces', (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
