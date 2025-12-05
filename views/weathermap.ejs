@@ -539,12 +539,10 @@
                         coolingFactor: 0.99,
                         minTemp: 1.0
                     }).run();
+                    
+                    // Note: We don't automatically save positions after layout
+                    // Positions are only saved when users manually arrange nodes
                 }
-
-                // Save positions after layout is complete
-                setTimeout(() => {
-                    saveNodePositions();
-                }, 1500); // Wait for layout to complete
 
             } catch (error) {
                 console.error('Error loading weathermap data:', error);
