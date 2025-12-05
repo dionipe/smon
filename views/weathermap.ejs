@@ -128,7 +128,8 @@
                 </div>
 
                 <!-- Floating Controls for Fullscreen -->
-                <div id="fullscreen-controls" class="fixed top-4 left-4 z-50 flex gap-2 flex-wrap hidden">
+                <div id="fullscreen-controls" class="absolute top-4 left-4 z-[9999] flex gap-2 flex-wrap bg-black/80 p-2 rounded-lg backdrop-blur-sm border border-white/20" style="display: none;">
+                    <div class="text-white text-sm font-medium mb-2 w-full text-center">Controls</div>
                     <button onclick="refreshWeathermap()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] backdrop-blur-sm">
                         <i class="fas fa-sync" id="refresh-icon-fs"></i>
                         Refresh
@@ -291,8 +292,7 @@
                                 }
                             },
                             'border-opacity': 0.8,
-                            'shape': 'rectangle',
-                            'cursor': (ele) => ele.data('isManual') ? 'pointer' : 'default'
+                            'shape': 'rectangle'
                         }
                     },
                     {
@@ -1048,24 +1048,48 @@
             const controls = document.getElementById('fullscreen-controls');
 
             if (!document.fullscreenElement) {
+                // Enter fullscreen
                 elem.requestFullscreen().then(() => {
+                    console.log('Entered fullscreen, showing controls');
                     icon.className = 'fas fa-compress';
                     iconFs.className = 'fas fa-compress';
-                    controls.classList.remove('hidden');
+
+                    // Position controls within the fullscreen element
+                    elem.style.position = 'relative';
+                    elem.appendChild(controls);
+                    controls.style.display = 'flex';
+                    controls.style.position = 'absolute';
+                    controls.style.top = '16px';
+                    controls.style.left = '16px';
+
                     // Resize Cytoscape to fit fullscreen
                     cy.resize();
                     cy.fit();
+                }).catch(err => {
+                    console.error('Error entering fullscreen:', err);
                 });
             } else {
+                // Exit fullscreen
                 document.exitFullscreen().then(() => {
+                    console.log('Exited fullscreen, hiding controls');
                     icon.className = 'fas fa-expand';
                     iconFs.className = 'fas fa-expand';
-                    controls.classList.add('hidden');
+
+                    // Move controls back to original position
+                    const originalContainer = document.querySelector('.relative');
+                    if (originalContainer) {
+                        originalContainer.appendChild(controls);
+                    }
+                    controls.style.display = 'none';
+                    elem.style.position = '';
+
                     // Resize Cytoscape back to normal
                     setTimeout(() => {
                         cy.resize();
                         cy.fit();
                     }, 100);
+                }).catch(err => {
+                    console.error('Error exiting fullscreen:', err);
                 });
             }
         }
