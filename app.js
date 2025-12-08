@@ -2955,13 +2955,9 @@ app.post('/api/discover-interfaces', (req, res) => {
     });
 
     let vendor = 'standard';
-    const interfaces = [];
-    let completed = false;
-    let responsesSent = false;
-
-    // Use appropriate OID for interface discovery (get vendor first)
     const interfaceMap = {}; // Map to store interfaces by index
-    let pendingOperations = 1; // Track pending SNMP operations
+    let responsesSent = false;
+    let pendingIfNameQuery = false;
 
     const sendResponse = () => {
       if (!responsesSent) {
@@ -3033,7 +3029,7 @@ app.post('/api/discover-interfaces', (req, res) => {
           // Try to get ifName for interfaces with empty descriptions
           const ifNameOids = emptyNameIndices.map(idx => `1.3.6.1.2.1.31.1.1.1.1.${idx}`);
           
-          pendingOperations++;
+          pendingIfNameQuery = true;
           console.log(`[DISCOVER] Attempting to get ifName for ${emptyNameIndices.length} interfaces with empty descriptions`);
           
           tempSession.get(ifNameOids, function(error, varbinds) {
@@ -3053,19 +3049,14 @@ app.post('/api/discover-interfaces', (req, res) => {
               console.log(`[DISCOVER] ifName fallback error: ${error}`);
             }
             
-            pendingOperations--;
-            if (pendingOperations === 0) {
-              clearTimeout(timeout);
-              sendResponse();
-            }
-          });
-        } else {
-          // No empty names or too many to query
-          pendingOperations--;
-          if (pendingOperations === 0) {
+            pendingIfNameQuery = false;
             clearTimeout(timeout);
             sendResponse();
-          }
+          });
+        } else {
+          // No empty names or too many to query, send response immediately
+          clearTimeout(timeout);
+          sendResponse();
         }
       });
     });
