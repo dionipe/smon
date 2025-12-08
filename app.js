@@ -2957,16 +2957,33 @@ app.post('/api/discover-interfaces', (req, res) => {
     let vendor = 'standard';
     const interfaces = [];
     let completed = false;
-    let sysDescrRetrieved = false;
+    let responsesSent = false;
+
+    // Use appropriate OID for interface discovery (get vendor first)
+    const interfaceMap = {}; // Map to store interfaces by index
+    let pendingOperations = 1; // Track pending SNMP operations
+
+    const sendResponse = () => {
+      if (!responsesSent) {
+        responsesSent = true;
+        try {
+          tempSession.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+        
+        const filteredInterfaces = Object.values(interfaceMap)
+          .sort((a, b) => a.index - b.index);
+        
+        console.log(`[DISCOVER] SNMP discovery completed, found ${filteredInterfaces.length} interfaces for ${vendor} device`);
+        res.json({ interfaces: filteredInterfaces, vendor });
+      }
+    };
 
     const timeout = setTimeout(() => {
-      if (!completed) {
-        completed = true;
-        tempSession.close();
-        console.log(`[DISCOVER] SNMP walk timeout, found ${interfaces.length} interfaces for ${vendor} device`);
-        res.json({ interfaces, vendor });
-      }
-    }, 5000); // 5 second timeout for discovery
+      console.log(`[DISCOVER] SNMP discovery timeout after 10 seconds, found ${Object.keys(interfaceMap).length} interfaces for ${vendor} device`);
+      sendResponse();
+    }, 10000); // 10 second timeout for discovery
 
     // First, get system description to detect vendor
     tempSession.get(['1.3.6.1.2.1.1.1.0'], function(error, varbinds) {
@@ -2977,107 +2994,80 @@ app.post('/api/discover-interfaces', (req, res) => {
       } else {
         console.log(`[DISCOVER] Could not detect vendor for ${host}, using standard MIB-II`);
       }
-      sysDescrRetrieved = true;
-    });
-
-    // Use appropriate OID for interface discovery based on vendor
-    const ifDescrOid = getVendorOID(vendor, 'ifDescr');
-    const interfaceMap = {}; // Map to store interfaces by index
-
-    tempSession.walk(ifDescrOid, 30, function(varbinds) {
-      varbinds.forEach(vb => {
-        if (snmp.isVarbindError(vb)) {
-          // Skip errors
-        } else {
-          const oidParts = vb.oid.split('.');
-          const index = oidParts[oidParts.length - 1];
-          // Filter to only accept OID ending with .2.X pattern (ifDescr)
-          if (oidParts[oidParts.length - 2] === '2') {
+      
+      // Now proceed with interface discovery
+      const ifDescrOid = getVendorOID(vendor, 'ifDescr');
+      console.log(`[DISCOVER] Using OID ${ifDescrOid} for interface discovery`);
+      
+      tempSession.walk(ifDescrOid, 30, function(varbinds) {
+        varbinds.forEach(vb => {
+          if (snmp.isVarbindError(vb)) {
+            // Skip errors
+          } else {
+            const oidParts = vb.oid.split('.');
+            const index = oidParts[oidParts.length - 1];
             const name = vb.value.toString().trim();
-            interfaceMap[index] = {
-              index: parseInt(index),
-              name: name,
-              hasName: name.length > 0
-            };
+            
+            if (!interfaceMap[index]) {
+              interfaceMap[index] = {
+                index: parseInt(index),
+                name: name,
+                hasName: name.length > 0
+              };
+            }
+          }
+        });
+      }, function(error) {
+        if (error && !error.toString().includes('Socket forcibly closed')) {
+          console.log(`[DISCOVER] SNMP walk error: ${error}`);
+        }
+        
+        // After ifDescr walk completes, check for interfaces with empty names
+        const emptyNameIndices = Object.keys(interfaceMap)
+          .filter(idx => !interfaceMap[idx].hasName)
+          .map(idx => parseInt(idx));
+        
+        console.log(`[DISCOVER] Found ${Object.keys(interfaceMap).length} interfaces, ${emptyNameIndices.length} with empty names`);
+        
+        if (emptyNameIndices.length > 0 && emptyNameIndices.length <= 100) {
+          // Try to get ifName for interfaces with empty descriptions
+          const ifNameOids = emptyNameIndices.map(idx => `1.3.6.1.2.1.31.1.1.1.1.${idx}`);
+          
+          pendingOperations++;
+          console.log(`[DISCOVER] Attempting to get ifName for ${emptyNameIndices.length} interfaces with empty descriptions`);
+          
+          tempSession.get(ifNameOids, function(error, varbinds) {
+            if (!error && varbinds) {
+              varbinds.forEach((vb, idx) => {
+                if (!snmp.isVarbindError(vb) && vb.value) {
+                  const ifName = vb.value.toString().trim();
+                  if (ifName.length > 0) {
+                    const index = emptyNameIndices[idx];
+                    console.log(`[DISCOVER] Found ifName for interface ${index}: ${ifName}`);
+                    interfaceMap[index].name = ifName;
+                    interfaceMap[index].hasName = true;
+                  }
+                }
+              });
+            } else if (error && !error.toString().includes('Socket forcibly closed')) {
+              console.log(`[DISCOVER] ifName fallback error: ${error}`);
+            }
+            
+            pendingOperations--;
+            if (pendingOperations === 0) {
+              clearTimeout(timeout);
+              sendResponse();
+            }
+          });
+        } else {
+          // No empty names or too many to query
+          pendingOperations--;
+          if (pendingOperations === 0) {
+            clearTimeout(timeout);
+            sendResponse();
           }
         }
       });
-    }, function(error) {
-      if (error) {
-        console.log(`[DISCOVER] SNMP walk error: ${error}`);
-      }
-      
-      // After ifDescr walk completes, check for interfaces with empty names and try ifName fallback
-      const emptyNameIndices = Object.keys(interfaceMap)
-        .filter(idx => !interfaceMap[idx].hasName)
-        .map(idx => parseInt(idx));
-      
-      console.log(`[DISCOVER] Found ${Object.keys(interfaceMap).length} interfaces, ${emptyNameIndices.length} with empty names`);
-      
-      if (emptyNameIndices.length > 0) {
-        // Try to get ifName (OID 1.3.6.1.2.1.31.1.1.1.1) for interfaces with empty descriptions
-        // This is especially useful for PPPoE and other virtual interfaces
-        const ifNameOids = emptyNameIndices.map(idx => `1.3.6.1.2.1.31.1.1.1.1.${idx}`);
-        
-        console.log(`[DISCOVER] Attempting to get ifName for ${emptyNameIndices.length} interfaces with empty descriptions`);
-        
-        tempSession.get(ifNameOids, function(error, varbinds) {
-          if (!error && varbinds) {
-            varbinds.forEach((vb, idx) => {
-              if (!snmp.isVarbindError(vb) && vb.value) {
-                const ifName = vb.value.toString().trim();
-                if (ifName.length > 0) {
-                  const index = emptyNameIndices[idx];
-                  console.log(`[DISCOVER] Found ifName for interface ${index}: ${ifName}`);
-                  interfaceMap[index].name = ifName;
-                  interfaceMap[index].hasName = true;
-                }
-              }
-            });
-          } else if (error) {
-            console.log(`[DISCOVER] ifName fallback error: ${error}`);
-          }
-          
-          // Filter interfaces: only include those with valid names, or use index as fallback
-          const filteredInterfaces = Object.values(interfaceMap)
-            .filter(iface => {
-              // If interface has a name, include it
-              if (iface.hasName && iface.name.length > 0) {
-                return true;
-              }
-              // For interfaces without names, use index as fallback name
-              iface.name = `Interface-${iface.index}`;
-              console.log(`[DISCOVER] Using fallback name for interface ${iface.index}: ${iface.name}`);
-              return true;
-            })
-            .sort((a, b) => a.index - b.index);
-          
-          interfaces.push(...filteredInterfaces);
-          
-          if (!completed) {
-            completed = true;
-            clearTimeout(timeout);
-            tempSession.close();
-            console.log(`[DISCOVER] SNMP discovery completed, found ${interfaces.length} interfaces for ${vendor} device`);
-            res.json({ interfaces, vendor });
-          }
-        });
-      } else {
-        // All interfaces have names, proceed with response
-        const filteredInterfaces = Object.values(interfaceMap)
-          .filter(iface => iface.name.length > 0)
-          .sort((a, b) => a.index - b.index);
-        
-        interfaces.push(...filteredInterfaces);
-        
-        if (!completed) {
-          completed = true;
-          clearTimeout(timeout);
-          tempSession.close();
-          console.log(`[DISCOVER] SNMP discovery completed, found ${interfaces.length} interfaces for ${vendor} device`);
-          res.json({ interfaces, vendor });
-        }
-      }
     });
   } catch (err) {
     console.error('Error discovering interfaces:', err);
