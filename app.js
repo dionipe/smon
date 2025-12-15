@@ -32,29 +32,29 @@ function handleCounterRollover(deviceId, iface, direction, currentValue) {
   const previousValue = lastCounterValues[key];
   const max32Bit = 4294967295; // 2^32 - 1
   const max64Bit = 18446744073709551615; // 2^64 - 1
-  
+
   // Initialize if first reading
   if (previousValue === undefined) {
     lastCounterValues[key] = currentValue;
     return 0; // Return 0 for first reading (no delta to calculate)
   }
-  
+
   // NORMAL CASE: current > previous (no rollover)
   if (currentValue >= previousValue) {
     const delta = currentValue - previousValue;
     lastCounterValues[key] = currentValue;
     return delta;
   }
-  
+
   // ROLLOVER DETECTED: current < previous
   // This is the key case for high-speed traffic where counter wraps around
   const actualDrop = previousValue - currentValue;
-  
+
   // Multi-wrap detection strategy:
   // For 32-bit counters with high-speed interfaces:
   // - If previous is NEAR 32-bit max and current wraps to small value: 1 wrap
   // - If previous is NOT near max and we see large drop: possible multiple wraps
-  
+
   // Pattern 1: Classic single wrap (previous ~4.29GB, current wraps to small)
   if (previousValue > max32Bit * 0.8) {
     // Previous was near the top, so single wrap is likely
@@ -64,23 +64,23 @@ function handleCounterRollover(deviceId, iface, direction, currentValue) {
       return singleWrap;
     }
   }
-  
+
   // Pattern 2: Multiple wraps (previous lower value, but large drop suggests multi-wrap)
   // For 1Gbps traffic on 60-sec poll: need ~125MB per cycle
   // Multiple wraps would show: previous=X, current=Y, and (prev - curr) is large
-  
+
   // If actualDrop > 1GB (which is impossible in single wrap), definitely multi-wrap
   if (actualDrop > 1000000000) { // 1GB
     // Multiple wraps occurred
     // Calculate wraps assuming each wrap adds 32-bit max to the count
     let wraps = Math.ceil(actualDrop / max32Bit);
     let adjustedDelta = (wraps * max32Bit) - previousValue + currentValue;
-    
-    console.log(`[${deviceId}] MULTI-WRAP DETECTED for ${iface.name} ${direction.toUpperCase()}: prev=${previousValue}, curr=${currentValue}, drop=${(actualDrop/1000000000).toFixed(2)}GB, wraps=${wraps}, adjusted=${(adjustedDelta/1000000000).toFixed(2)}GB`);
+
+    console.log(`[${deviceId}] MULTI-WRAP DETECTED for ${iface.name} ${direction.toUpperCase()}: prev=${previousValue}, curr=${currentValue}, drop=${(actualDrop / 1000000000).toFixed(2)}GB, wraps=${wraps}, adjusted=${(adjustedDelta / 1000000000).toFixed(2)}GB`);
     lastCounterValues[key] = currentValue;
     return adjustedDelta;
   }
-  
+
   // Pattern 3: Significant drop but < 1GB - likely single wrap
   // Use standard wrap formula
   const singleWrapDelta = max32Bit - previousValue + currentValue;
@@ -88,24 +88,24 @@ function handleCounterRollover(deviceId, iface, direction, currentValue) {
     lastCounterValues[key] = currentValue;
     return singleWrapDelta;
   }
-  
+
   // Pattern 4: 64-bit wrap check
   const drop64Bit = max64Bit - previousValue + currentValue;
   if (drop64Bit > 0 && drop64Bit < max64Bit * 0.05) {
-    console.log(`[${deviceId}] 64-bit wrap for ${iface.name} ${direction.toUpperCase()}: ${(drop64Bit/1000000000).toFixed(2)}GB`);
+    console.log(`[${deviceId}] 64-bit wrap for ${iface.name} ${direction.toUpperCase()}: ${(drop64Bit / 1000000000).toFixed(2)}GB`);
     lastCounterValues[key] = currentValue;
     return drop64Bit;
   }
-  
+
   // Pattern 5: Interface reset detection
   if (currentValue < 1000000) { // < 1MB likely reset
     console.warn(`[${deviceId}] Interface reset for ${iface.name} ${direction.toUpperCase()}: ${previousValue} -> ${currentValue}`);
     lastCounterValues[key] = currentValue;
     return 0;
   }
-  
+
   // Default: treat drop as legitimate high-speed traffic
-  console.log(`[${deviceId}] Counter drop for ${iface.name} ${direction.toUpperCase()}: prev=${previousValue}, curr=${currentValue}, drop=${(actualDrop/1000000000).toFixed(2)}GB`);
+  console.log(`[${deviceId}] Counter drop for ${iface.name} ${direction.toUpperCase()}: prev=${previousValue}, curr=${currentValue}, drop=${(actualDrop / 1000000000).toFixed(2)}GB`);
   lastCounterValues[key] = currentValue;
   return actualDrop;
 }
@@ -114,7 +114,7 @@ function handleCounterRollover(deviceId, iface, direction, currentValue) {
 function cleanupCounterHistory() {
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
   const now = Date.now();
-  
+
   // This is a simple cleanup - in production you might want more sophisticated tracking
   // For now, we'll just clear all counters periodically to force re-initialization
   // This ensures we don't accumulate stale data indefinitely
@@ -157,7 +157,10 @@ const VENDOR_OIDS = {
     ifInOctets: '1.3.6.1.2.1.2.2.1.10',  // Inbound octets
     ifOutOctets: '1.3.6.1.2.1.2.2.1.16', // Outbound octets
     sysDescr: '1.3.6.1.2.1.1.1.0',        // System description
-    cpuUsage: '1.3.6.1.4.1.2021.11.9.0'   // UCD-SNMP-MIB CPU usage (percentage)
+    cpuUsage: '1.3.6.1.4.1.2021.11.9.0',   // UCD-SNMP-MIB CPU usage (percentage)
+    // Standard 64-bit counters (High Capacity)
+    ifHCInOctets: '1.3.6.1.2.1.31.1.1.1.6',
+    ifHCOutOctets: '1.3.6.1.2.1.31.1.1.1.10'
   },
   // Cisco specific OIDs
   cisco: {
@@ -193,6 +196,9 @@ const VENDOR_OIDS = {
     // Mikrotik specific counters
     mtxrIfInOctets: '1.3.6.1.4.1.14988.1.1.14.1.1.6',  // Mikrotik interface in octets
     mtxrIfOutOctets: '1.3.6.1.4.1.14988.1.1.14.1.1.10', // Mikrotik interface out octets
+    // Map standard HC names to Mikrotik OIDs
+    ifHCInOctets: '1.3.6.1.4.1.14988.1.1.14.1.1.6',
+    ifHCOutOctets: '1.3.6.1.4.1.14988.1.1.14.1.1.10',
     // Mikrotik CPU usage
     mtxrCpuLoad: '1.3.6.1.4.1.14988.1.1.3.11.0' // Mikrotik CPU load
   },
@@ -240,14 +246,14 @@ const VENDOR_OIDS = {
 // Function to detect device vendor based on sysDescr
 function detectVendor(sysDescr) {
   const descr = sysDescr.toLowerCase();
-  
+
   if (descr.includes('fortigate') || descr.includes('fortinet')) return 'fortigate';
   if (descr.includes('cisco')) return 'cisco';
   if (descr.includes('huawei')) return 'huawei';
   if (descr.includes('mikrotik') || descr.includes('routeros')) return 'mikrotik';
   if (descr.includes('juniper') || descr.includes('junos')) return 'juniper';
   if (descr.includes('hp') || descr.includes('aruba') || descr.includes('procurve')) return 'hp';
-  
+
   return 'standard'; // Default to standard MIB-II
 }
 
@@ -285,19 +291,19 @@ function processRxData(deviceId, device, iface, rxValue, timestamp = new Date())
   try {
     // Handle counter rollover and get the actual delta
     const rxDelta = handleCounterRollover(deviceId, iface, 'rx', rxValue);
-    
+
     // Skip writing for first reading (delta = 0) to avoid 0 Mbps drop on service restart
     if (rxDelta === 0) {
       console.log(`[${deviceId}] RX first reading for ${iface.name}, skipping write`);
       return;
     }
-    
+
     // Log high-traffic interfaces for debugging
     if (rxDelta > 500000000) { // > 500MB delta
       const deltaGb = (rxDelta / 1000000000).toFixed(2);
       const estimatedMbps = ((rxDelta * 8 / 1000000) / (settings.pollingInterval / 1000)).toFixed(2);
       console.log(`[${deviceId}] HIGH-SPEED RX for ${iface.name}: counter=${rxValue}, delta=${deltaGb}GB (~${estimatedMbps}Mbps estimate)`);
-      
+
       // Track as high-speed interface for better multi-wrap detection
       const ifKey = `${deviceId}_${iface.index}`;
       if (!highSpeedInterfaces[ifKey] || highSpeedInterfaces[ifKey] < estimatedMbps) {
@@ -305,7 +311,7 @@ function processRxData(deviceId, device, iface, rxValue, timestamp = new Date())
         console.log(`[${deviceId}] Interface ${iface.name} marked as HIGH-SPEED (${estimatedMbps} Mbps)`);
       }
     }
-    
+
     const writeApi = client.getWriteApi(settings.influxdb.org, settings.influxdb.bucket);
     const rxPoint = new Point('snmp_metric')
       .tag('device', deviceId)
@@ -331,19 +337,19 @@ function processTxData(deviceId, device, iface, txValue, timestamp = new Date())
   try {
     // Handle counter rollover and get the actual delta
     const txDelta = handleCounterRollover(deviceId, iface, 'tx', txValue);
-    
+
     // Skip writing for first reading (delta = 0) to avoid 0 Mbps drop on service restart
     if (txDelta === 0) {
       console.log(`[${deviceId}] TX first reading for ${iface.name}, skipping write`);
       return;
     }
-    
+
     // Log high-traffic interfaces for debugging
     if (txDelta > 500000000) { // > 500MB delta
       const deltaGb = (txDelta / 1000000000).toFixed(2);
       const estimatedMbps = ((txDelta * 8 / 1000000) / (settings.pollingInterval / 1000)).toFixed(2);
       console.log(`[${deviceId}] HIGH-SPEED TX for ${iface.name}: counter=${txValue}, delta=${deltaGb}GB (~${estimatedMbps}Mbps estimate)`);
-      
+
       // Track as high-speed interface for better multi-wrap detection
       const ifKey = `${deviceId}_${iface.index}`;
       if (!highSpeedInterfaces[ifKey] || highSpeedInterfaces[ifKey] < estimatedMbps) {
@@ -351,7 +357,7 @@ function processTxData(deviceId, device, iface, txValue, timestamp = new Date())
         console.log(`[${deviceId}] Interface ${iface.name} marked as HIGH-SPEED (${estimatedMbps} Mbps)`);
       }
     }
-    
+
     const writeApi = client.getWriteApi(settings.influxdb.org, settings.influxdb.bucket);
     const txPoint = new Point('snmp_metric')
       .tag('device', deviceId)
@@ -386,7 +392,7 @@ function processCpuData(deviceId, device, cpuValue, timestamp = new Date()) {
     writeApi.writePoint(cpuPoint);
     writeApi.close().then(() => {
       console.log(`[${deviceId}] CPU data written: ${cpuValue}%`);
-      
+
       // Send high CPU notification if enabled
       notifyHighCpu(deviceId, device.name, cpuValue);
     }).catch(err => {
@@ -435,16 +441,16 @@ function notifyDeviceStatus(deviceId, deviceName, status, details = '') {
 
   if (status === 'up' && settings.telegram.notifyOnDeviceUp) {
     message = `🟢 <b>Device UP</b>\n\n` +
-              `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `📊 <b>Status:</b> Device is now online\n` +
-              (details ? `ℹ️ <b>Details:</b> ${details}` : '');
+      `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `📊 <b>Status:</b> Device is now online\n` +
+      (details ? `ℹ️ <b>Details:</b> ${details}` : '');
   } else if (status === 'down' && settings.telegram.notifyOnDeviceDown) {
     message = `🔴 <b>Device DOWN</b>\n\n` +
-              `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `📊 <b>Status:</b> Device is offline\n` +
-              (details ? `ℹ️ <b>Details:</b> ${details}` : '');
+      `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `📊 <b>Status:</b> Device is offline\n` +
+      (details ? `ℹ️ <b>Details:</b> ${details}` : '');
   }
 
   if (message) {
@@ -460,15 +466,15 @@ function notifyHighCpu(deviceId, deviceName, cpuValue) {
   if (cpuValue >= threshold) {
     const timestamp = new Date().toLocaleString('id-ID');
     const message = `⚠️ <b>High CPU Usage Alert</b>\n\n` +
-                    `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
-                    `⏰ <b>Time:</b> ${timestamp}\n` +
-                    `📊 <b>CPU Usage:</b> ${cpuValue}%\n` +
-                    `🎯 <b>Threshold:</b> ${threshold}%\n` +
-                    `🚨 <b>Status:</b> CPU usage is above threshold!`;
+      `📍 <b>Device:</b> ${deviceName} (${deviceId})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `📊 <b>CPU Usage:</b> ${cpuValue}%\n` +
+      `🎯 <b>Threshold:</b> ${threshold}%\n` +
+      `🚨 <b>Status:</b> CPU usage is above threshold!`;
 
     sendTelegramMessage(message);
     notifyHighCpuEmail(deviceId, deviceName, cpuValue);
-    
+
     // Log high CPU event
     logEvent('high_cpu', 'warning', deviceName, `Device "${deviceName}" has high CPU usage: ${cpuValue}% (threshold: ${threshold}%)`, {
       deviceId: deviceId,
@@ -499,13 +505,13 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
 
   if (status === 'down' && settings.telegram.notifyOnPingDown) {
     message = `🔴 <b>Ping Target Down Alert</b>\n\n` +
-              `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `❌ <b>Status:</b> Target is unreachable\n` +
-              `📊 <b>Packet Loss:</b> 100%\n` +
-              `🚨 <b>Alert:</b> Ping target is down!`;
+      `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `❌ <b>Status:</b> Target is unreachable\n` +
+      `📊 <b>Packet Loss:</b> 100%\n` +
+      `🚨 <b>Alert:</b> Ping target is down!`;
     shouldNotify = true;
-    
+
     // Log ping down event
     logEvent('ping_down', 'error', targetName, `Ping target "${targetName}" (${targetHost}) is down`, {
       targetId: targetId,
@@ -515,14 +521,14 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
     });
   } else if (status === 'up' && settings.telegram.notifyOnPingUp) {
     message = `🟢 <b>Ping Target Up Alert</b>\n\n` +
-              `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `✅ <b>Status:</b> Target is back online\n` +
-              `📊 <b>Latency:</b> ${latency}ms\n` +
-              `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
-              `🎉 <b>Alert:</b> Ping target recovered!`;
+      `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `✅ <b>Status:</b> Target is back online\n` +
+      `📊 <b>Latency:</b> ${latency}ms\n` +
+      `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
+      `🎉 <b>Alert:</b> Ping target recovered!`;
     shouldNotify = true;
-    
+
     // Log ping up event
     logEvent('ping_up', 'info', targetName, `Ping target "${targetName}" (${targetHost}) is back online`, {
       targetId: targetId,
@@ -533,13 +539,13 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
     });
   } else if (status === 'timeout' && settings.telegram.notifyOnPingTimeout) {
     message = `⏰ <b>Ping Timeout Alert</b>\n\n` +
-              `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `⏳ <b>Status:</b> Ping request timed out\n` +
-              `📊 <b>Packet Loss:</b> 100%\n` +
-              `🚨 <b>Alert:</b> Ping timeout detected!`;
+      `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `⏳ <b>Status:</b> Ping request timed out\n` +
+      `📊 <b>Packet Loss:</b> 100%\n` +
+      `🚨 <b>Alert:</b> Ping timeout detected!`;
     shouldNotify = true;
-    
+
     // Log ping timeout event
     logEvent('ping_timeout', 'warning', targetName, `Ping target "${targetName}" (${targetHost}) timed out`, {
       targetId: targetId,
@@ -551,14 +557,14 @@ function notifyPingStatus(targetId, targetName, targetHost, status, latency = nu
     const threshold = settings.telegram.pingLatencyThreshold || 50;
     if (latency >= threshold) {
       message = `🐌 <b>High Ping Latency Alert</b>\n\n` +
-                `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
-                `⏰ <b>Time:</b> ${timestamp}\n` +
-                `📊 <b>Latency:</b> ${latency}ms\n` +
-                `🎯 <b>Threshold:</b> ${threshold}ms\n` +
-                `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
-                `🚨 <b>Alert:</b> Ping latency is above threshold!`;
+        `📍 <b>Target:</b> ${targetName} (${targetHost})\n` +
+        `⏰ <b>Time:</b> ${timestamp}\n` +
+        `📊 <b>Latency:</b> ${latency}ms\n` +
+        `🎯 <b>Threshold:</b> ${threshold}ms\n` +
+        `📊 <b>Packet Loss:</b> ${packetLoss}%\n` +
+        `🚨 <b>Alert:</b> Ping latency is above threshold!`;
       shouldNotify = true;
-      
+
       // Log high latency event
       logEvent('high_latency', 'warning', targetName, `Ping target "${targetName}" (${targetHost}) has high latency: ${latency}ms`, {
         targetId: targetId,
@@ -586,12 +592,12 @@ function notifyWebsiteStatus(targetId, targetName, targetUrl, status, responseTi
 
   if (status === 'down' && settings.website.notifyOnDown) {
     message = `🔴 <b>Website Down Alert</b>\n\n` +
-              `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `❌ <b>Status:</b> Website is unreachable\n` +
-              `🚨 <b>Alert:</b> Website is down!`;
+      `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `❌ <b>Status:</b> Website is unreachable\n` +
+      `🚨 <b>Alert:</b> Website is down!`;
     shouldNotify = true;
-    
+
     // Log website down event
     logEvent('website_down', 'error', targetName, `Website "${targetName}" (${targetUrl}) is down`, {
       targetId: targetId,
@@ -600,13 +606,13 @@ function notifyWebsiteStatus(targetId, targetName, targetUrl, status, responseTi
     });
   } else if (status === 'up' && settings.website.notifyOnUp) {
     message = `🟢 <b>Website Up Alert</b>\n\n` +
-              `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `✅ <b>Status:</b> Website is back online\n` +
-              `⚡ <b>Response Time:</b> ${responseTime}ms\n` +
-              `🎉 <b>Alert:</b> Website recovered!`;
+      `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `✅ <b>Status:</b> Website is back online\n` +
+      `⚡ <b>Response Time:</b> ${responseTime}ms\n` +
+      `🎉 <b>Alert:</b> Website recovered!`;
     shouldNotify = true;
-    
+
     // Log website up event
     logEvent('website_up', 'info', targetName, `Website "${targetName}" (${targetUrl}) is back online`, {
       targetId: targetId,
@@ -616,12 +622,12 @@ function notifyWebsiteStatus(targetId, targetName, targetUrl, status, responseTi
     });
   } else if (status === 'ssl_expiry_warning' && settings.website.notifyOnSslExpiry) {
     message = `🔐 <b>SSL Certificate Expiry Warning</b>\n\n` +
-              `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
-              `⏰ <b>Time:</b> ${timestamp}\n` +
-              `⏰ <b>Days Remaining:</b> ${sslDaysRemaining} days\n` +
-              `🚨 <b>Alert:</b> SSL certificate expires soon!`;
+      `🌐 <b>Website:</b> ${targetName} (${targetUrl})\n` +
+      `⏰ <b>Time:</b> ${timestamp}\n` +
+      `⏰ <b>Days Remaining:</b> ${sslDaysRemaining} days\n` +
+      `🚨 <b>Alert:</b> SSL certificate expires soon!`;
     shouldNotify = true;
-    
+
     // Log SSL expiry warning event
     logEvent('ssl_expiry_warning', 'warning', targetName, `SSL certificate for "${targetName}" (${targetUrl}) expires in ${sslDaysRemaining} days`, {
       targetId: targetId,
@@ -937,10 +943,10 @@ function notifyFlappingStatus(id, name, type, isFlapping, host = '') {
     if (!flappingAlerts[alertKey]) {
       // New flapping detected
       const message = `🔄 <b>Flapping Detected</b>\n\n` +
-                     `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
-                     `⏰ <b>Time:</b> ${timestamp}\n` +
-                     `⚠️ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is flapping!\n` +
-                     `🚨 <b>Action:</b> Notifications suppressed until stable`;
+        `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
+        `⏰ <b>Time:</b> ${timestamp}\n` +
+        `⚠️ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is flapping!\n` +
+        `🚨 <b>Action:</b> Notifications suppressed until stable`;
 
       sendTelegramMessage(message);
       notifyFlappingEmail(id, name, type, true, host);
@@ -959,11 +965,11 @@ function notifyFlappingStatus(id, name, type, isFlapping, host = '') {
       // Flapping stopped
       const duration = Math.round((Date.now() - flappingAlerts[alertKey].startTime) / 1000 / 60);
       const message = `✅ <b>Flapping Resolved</b>\n\n` +
-                     `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
-                     `⏰ <b>Time:</b> ${timestamp}\n` +
-                     `⏱️ <b>Duration:</b> ${duration} minutes\n` +
-                     `✅ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is now stable\n` +
-                     `📢 <b>Action:</b> Normal notifications resumed`;
+        `📍 <b>${type === 'device' ? 'Device' : 'Ping Target'}:</b> ${name}${host ? ` (${host})` : ''}\n` +
+        `⏰ <b>Time:</b> ${timestamp}\n` +
+        `⏱️ <b>Duration:</b> ${duration} minutes\n` +
+        `✅ <b>Status:</b> ${type === 'device' ? 'Device' : 'Target'} is now stable\n` +
+        `📢 <b>Action:</b> Normal notifications resumed`;
 
       sendTelegramMessage(message);
       notifyFlappingEmail(id, name, type, false, host, duration);
@@ -1049,7 +1055,7 @@ function migrateInterfaceData() {
           return null;
         }
       }).filter(iface => iface !== null);
-      
+
       if (migratedInterfaces.length !== device.selectedInterfaces.length) {
         console.log(`[MIGRATION] Migrated ${device.id}: ${device.selectedInterfaces.length} -> ${migratedInterfaces.length} interfaces`);
         device.selectedInterfaces = migratedInterfaces;
@@ -1057,7 +1063,7 @@ function migrateInterfaceData() {
       }
     }
   });
-  
+
   if (migrated) {
     saveConfig();
     console.log('[MIGRATION] Interface data migration completed and saved');
@@ -1329,7 +1335,7 @@ function loadTopology() {
       const data = fs.readFileSync(topologyFile, 'utf8');
       topology = JSON.parse(data);
       console.log(`✓ Topology loaded: ${topology.nodes.length} nodes, ${topology.links.length} links`);
-      
+
       // Initialize ping targets for topology nodes
       initializeTopologyPingTargets();
     } else {
@@ -1362,7 +1368,7 @@ function initializeTopologyPingTargets() {
       }
     }
   }
-  
+
   // Save updated ping targets
   savePingTargets();
 }
@@ -1399,7 +1405,7 @@ function getTopologyStatus() {
       const pingTarget = pingTargets.find(t => t.host === node.probeTarget || t.host === node.ip);
       if (pingTarget && pingStatusHistory[pingTarget.id]) {
         const history = pingStatusHistory[pingTarget.id];
-        
+
         // Convert alive boolean to status string
         let status = 'unknown';
         if (history.alive === true) {
@@ -1407,7 +1413,7 @@ function getTopologyStatus() {
         } else if (history.alive === false) {
           status = 'down';
         }
-        
+
         nodeStatus[node.id] = {
           status: status,
           latency: history.lastLatency || history.latency || 0,
@@ -1429,13 +1435,13 @@ function getTopologyStatus() {
   for (const link of topology.links) {
     const sourceStatus = nodeStatus[link.source]?.status || 'unknown';
     const targetStatus = nodeStatus[link.target]?.status || 'unknown';
-    
+
     let quality = 'unknown';
     if (sourceStatus === 'up' && targetStatus === 'up') {
       const sourceLatency = nodeStatus[link.source]?.latency || 0;
       const targetLatency = nodeStatus[link.target]?.latency || 0;
       const avgLatency = (sourceLatency + targetLatency) / 2;
-      
+
       if (avgLatency > (link.latencyThreshold || 100)) {
         quality = 'warning';
       } else {
@@ -1623,10 +1629,10 @@ app.get('/', (req, res) => {
       allInterfaces = allInterfaces.concat(device.selectedInterfaces);
     }
   });
-  
+
   // Ensure pingTargets is defined
   const safePingTargets = pingTargets || [];
-  
+
   // Group ping targets by group for dashboard
   const groupedPingTargets = {};
   safePingTargets.forEach(target => {
@@ -1635,8 +1641,8 @@ app.get('/', (req, res) => {
     }
     groupedPingTargets[target.group].push(target);
   });
-  
-  res.render('index', { 
+
+  res.render('index', {
     title: 'Dashboard',
     devices: snmpDevices,
     interfaces: allInterfaces,
@@ -1650,15 +1656,15 @@ app.get('/', (req, res) => {
 
 // Route for device management page
 app.get('/devices', (req, res) => {
-  res.render('devices', { 
+  res.render('devices', {
     title: 'Devices',
-    devices: snmpDevices 
+    devices: snmpDevices
   });
 });
 
 // Route for settings page
 app.get('/settings', (req, res) => {
-  res.render('settings', { 
+  res.render('settings', {
     title: 'Settings',
     settings: settings,
     devices: snmpDevices,
@@ -1708,7 +1714,7 @@ app.get('/ping', (req, res) => {
     groupedTargets[target.group].push(target);
   });
 
-  res.render('ping', { 
+  res.render('ping', {
     title: 'Ping Monitor',
     pingTargets: pingTargets,
     groupedTargets: groupedTargets,
@@ -1750,7 +1756,7 @@ app.get('/websites', (req, res) => {
     groupedTargets[target.group].push(target);
   });
 
-  res.render('websites', { 
+  res.render('websites', {
     title: 'Website Monitor',
     websiteTargets: websiteTargets,
     groupedTargets: groupedTargets,
@@ -1789,17 +1795,17 @@ app.get('/api/ping-targets', (req, res) => {
 app.post('/api/ping-targets', (req, res) => {
   try {
     const { name, host, group } = req.body;
-    
+
     if (!name || !host || !group) {
       return res.status(400).json({ error: 'Name, host, and group are required' });
     }
-    
+
     // Check if host already exists
     const existingTarget = pingTargets.find(target => target.host === host);
     if (existingTarget) {
       return res.status(400).json({ error: 'Host already exists' });
     }
-    
+
     const newTarget = {
       id: Math.max(...pingTargets.map(t => t.id), 0) + 1,
       name: name.trim(),
@@ -1807,10 +1813,10 @@ app.post('/api/ping-targets', (req, res) => {
       group: group.trim(),
       enabled: true
     };
-    
+
     pingTargets.push(newTarget);
     savePingTargets();
-    
+
     // Log the event
     logEvent('ping_target_added', 'info', 'Ping Monitor', `Ping target "${newTarget.name}" (${newTarget.host}) added to group "${newTarget.group}"`, {
       targetId: newTarget.id,
@@ -1818,7 +1824,7 @@ app.post('/api/ping-targets', (req, res) => {
       targetHost: newTarget.host,
       targetGroup: newTarget.group
     });
-    
+
     res.json({
       success: true,
       message: 'Ping target added successfully',
@@ -1835,15 +1841,15 @@ app.delete('/api/ping-targets/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const index = pingTargets.findIndex(target => target.id === id);
-    
+
     if (index === -1) {
       return res.status(404).json({ error: 'Ping target not found' });
     }
-    
+
     const target = pingTargets[index]; // Capture target data before deletion
     pingTargets.splice(index, 1);
     savePingTargets();
-    
+
     // Log the event
     logEvent('ping_target_deleted', 'warning', 'Ping Monitor', `Ping target "${target.name}" (${target.host}) removed from group "${target.group}"`, {
       targetId: target.id,
@@ -1851,7 +1857,7 @@ app.delete('/api/ping-targets/:id', (req, res) => {
       targetHost: target.host,
       targetGroup: target.group
     });
-    
+
     res.json({
       success: true,
       message: 'Ping target deleted successfully'
@@ -1867,14 +1873,14 @@ app.patch('/api/ping-targets/:id/toggle', (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const target = pingTargets.find(target => target.id === id);
-    
+
     if (!target) {
       return res.status(404).json({ error: 'Ping target not found' });
     }
-    
+
     target.enabled = !target.enabled;
     savePingTargets();
-    
+
     // Log the event
     const action = target.enabled ? 'enabled' : 'disabled';
     logEvent('ping_target_toggled', 'info', 'Ping Monitor', `Ping target "${target.name}" (${target.host}) ${action}`, {
@@ -1884,7 +1890,7 @@ app.patch('/api/ping-targets/:id/toggle', (req, res) => {
       targetGroup: target.group,
       enabled: target.enabled
     });
-    
+
     res.json({
       success: true,
       message: 'Ping target status updated successfully',
@@ -2022,17 +2028,17 @@ app.get('/api/website-targets', (req, res) => {
 app.post('/api/website-targets', (req, res) => {
   try {
     const { name, url, group } = req.body;
-    
+
     if (!name || !url || !group) {
       return res.status(400).json({ error: 'Name, URL, and group are required' });
     }
-    
+
     // Check if URL already exists
     const existingTarget = websiteTargets.find(target => target.url === url);
     if (existingTarget) {
       return res.status(400).json({ error: 'URL already exists' });
     }
-    
+
     const newTarget = {
       id: Math.max(...websiteTargets.map(t => t.id), 0) + 1,
       name: name.trim(),
@@ -2040,10 +2046,10 @@ app.post('/api/website-targets', (req, res) => {
       group: group.trim(),
       enabled: true
     };
-    
+
     websiteTargets.push(newTarget);
     saveWebsiteTargets();
-    
+
     res.json({
       success: true,
       message: 'Website target added successfully',
@@ -2060,14 +2066,14 @@ app.delete('/api/website-targets/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const index = websiteTargets.findIndex(target => target.id === id);
-    
+
     if (index === -1) {
       return res.status(404).json({ error: 'Website target not found' });
     }
-    
+
     websiteTargets.splice(index, 1);
     saveWebsiteTargets();
-    
+
     res.json({
       success: true,
       message: 'Website target deleted successfully'
@@ -2083,14 +2089,14 @@ app.patch('/api/website-targets/:id/toggle', (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const target = websiteTargets.find(target => target.id === id);
-    
+
     if (!target) {
       return res.status(404).json({ error: 'Website target not found' });
     }
-    
+
     target.enabled = !target.enabled;
     saveWebsiteTargets();
-    
+
     res.json({
       success: true,
       message: 'Website target status updated successfully',
@@ -2187,22 +2193,22 @@ app.get('/api/website-history/:targetId', async (req, res) => {
 app.post('/api/ping-test', async (req, res) => {
   try {
     const { host, targetId } = req.body;
-    
+
     if (!host) {
       return res.status(400).json({ error: 'Host is required' });
     }
-    
+
     const result = await ping.promise.probe(host, {
       timeout: 5,
       min_reply: 1,
       extra: ['-c', '3'] // Send 3 packets
     });
-    
+
     // Save to database if targetId provided
     if (targetId) {
       addPingToDatabase(targetId, result);
     }
-    
+
     res.json({
       success: true,
       host: host,
@@ -2305,7 +2311,7 @@ app.post('/login', (req, res) => {
   // Use credentials from settings.json (configurable)
   const authConfig = settings.authentication || { enabled: true, username: 'admin', password: 'admin123' };
   const sessionTimeout = authConfig.sessionTimeout || (24 * 60 * 60 * 1000); // Default 24 hours
-  
+
   if (authConfig.enabled && username === authConfig.username && password === authConfig.password) {
     // Set session or cookie for authentication
     res.cookie('authenticated', 'true', { maxAge: sessionTimeout });
@@ -2365,7 +2371,7 @@ app.get('/monitoring', async (req, res) => {
 app.get('/bandwidth', (req, res) => {
   try {
     console.log('Route /bandwidth called');
-    
+
     res.render('bandwidth', {
       title: 'Bandwidth Dashboard',
       devices: snmpDevices
@@ -2394,7 +2400,7 @@ app.get('/api/settings', (req, res) => {
 app.post('/api/settings', (req, res) => {
   try {
     const { pollingIntervalSeconds, pingIntervalSeconds, dataRetentionDays } = req.body;
-    
+
     if (pollingIntervalSeconds) {
       if (pollingIntervalSeconds < 10) {
         return res.status(400).json({ error: 'Polling interval must be at least 10 seconds' });
@@ -2403,7 +2409,7 @@ app.post('/api/settings', (req, res) => {
       const newInterval = pollingIntervalSeconds * 1000;
       settings.pollingInterval = newInterval;
     }
-    
+
     if (pingIntervalSeconds) {
       if (pingIntervalSeconds < 5) {
         return res.status(400).json({ error: 'Ping interval must be at least 5 seconds' });
@@ -2415,26 +2421,26 @@ app.post('/api/settings', (req, res) => {
       const newPingInterval = pingIntervalSeconds * 1000;
       settings.pingInterval = newPingInterval;
     }
-    
+
     if (dataRetentionDays !== undefined) {
       if (dataRetentionDays < 1 || dataRetentionDays > 730) {
         return res.status(400).json({ error: 'Data retention must be between 1 and 730 days' });
       }
       settings.dataRetention = dataRetentionDays;
     }
-    
+
     saveSettings();
-    
+
     // Restart polling if interval changed
     if (pollingIntervalSeconds) {
       restartPolling();
     }
-    
+
     // Cleanup old data if retention changed
     if (dataRetentionDays !== undefined) {
       cleanupOldData();
     }
-    
+
     res.json({
       success: true,
       message: 'Settings updated successfully',
@@ -2456,25 +2462,25 @@ app.post('/api/settings', (req, res) => {
 app.post('/api/settings/ping-notifications', (req, res) => {
   try {
     const { enabled, notifyOnDown, notifyOnTimeout, notifyOnHighLatency, latencyThreshold } = req.body;
-    
+
     if (!settings.pingNotifications) {
       settings.pingNotifications = {};
     }
-    
+
     settings.pingNotifications.enabled = enabled !== undefined ? enabled : true;
     settings.pingNotifications.notifyOnDown = notifyOnDown !== undefined ? notifyOnDown : true;
     settings.pingNotifications.notifyOnTimeout = notifyOnTimeout !== undefined ? notifyOnTimeout : true;
     settings.pingNotifications.notifyOnHighLatency = notifyOnHighLatency !== undefined ? notifyOnHighLatency : true;
-    
+
     if (latencyThreshold !== undefined) {
       if (latencyThreshold < 10 || latencyThreshold > 500) {
         return res.status(400).json({ error: 'Latency threshold must be between 10 and 500 ms' });
       }
       settings.pingNotifications.latencyThreshold = latencyThreshold;
     }
-    
+
     saveSettings();
-    
+
     res.json({
       success: true,
       pingNotifications: settings.pingNotifications
@@ -2489,7 +2495,7 @@ app.post('/api/settings/ping-notifications', (req, res) => {
 app.post('/api/settings/influxdb/test', async (req, res) => {
   try {
     let { url, org, bucket, token } = req.body;
-    
+
     // If no parameters provided, use current settings
     if (!url || !org || !bucket || !token) {
       url = settings.influxdb.url;
@@ -2497,14 +2503,14 @@ app.post('/api/settings/influxdb/test', async (req, res) => {
       bucket = settings.influxdb.bucket;
       token = settings.influxdb.token;
     }
-    
+
     // Create temporary InfluxDB client
     const testClient = new InfluxDB({ url, token });
     const testQueryApi = testClient.getQueryApi(org);
-    
+
     // Try a simple query to test connection
     const fluxQuery = `from(bucket: "${bucket}") |> range(start: -1m) |> limit(n: 1)`;
-    
+
     return new Promise((resolve) => {
       const results = [];
       testQueryApi.queryRows(fluxQuery, {
@@ -2530,9 +2536,9 @@ app.post('/api/settings/influxdb/test', async (req, res) => {
     });
   } catch (err) {
     console.error('Error testing InfluxDB connection:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message || 'Internal Server Error' 
+      error: err.message || 'Internal Server Error'
     });
   }
 });
@@ -2541,22 +2547,22 @@ app.post('/api/settings/influxdb/test', async (req, res) => {
 app.post('/api/settings/influxdb', (req, res) => {
   try {
     const { url, org, bucket, token } = req.body;
-    
+
     if (!url || !org || !bucket || !token) {
       return res.status(400).json({ error: 'All fields are required' });
     }
-    
+
     if (!settings.influxdb) {
       settings.influxdb = {};
     }
-    
+
     settings.influxdb.url = url.trim();
     settings.influxdb.org = org.trim();
     settings.influxdb.bucket = bucket.trim();
     settings.influxdb.token = token.trim();
-    
+
     saveSettings();
-    
+
     res.json({
       success: true,
       message: 'InfluxDB settings saved successfully',
@@ -2576,14 +2582,14 @@ app.post('/api/settings/influxdb', (req, res) => {
 // API to update Telegram settings
 app.post('/api/settings/telegram', (req, res) => {
   try {
-    const { 
-      enabled, 
-      botToken, 
-      chatId, 
-      notifyOnDeviceDown, 
-      notifyOnDeviceUp, 
-      notifyOnHighCpu, 
-      cpuThreshold, 
+    const {
+      enabled,
+      botToken,
+      chatId,
+      notifyOnDeviceDown,
+      notifyOnDeviceUp,
+      notifyOnHighCpu,
+      cpuThreshold,
       notifyOnInterfaceDown,
       notifyOnPingDown,
       notifyOnPingUp,
@@ -2591,11 +2597,11 @@ app.post('/api/settings/telegram', (req, res) => {
       notifyOnPingHighLatency,
       pingLatencyThreshold
     } = req.body;
-    
+
     if (!settings.telegram) {
       settings.telegram = {};
     }
-    
+
     settings.telegram.enabled = enabled === true || enabled === 'true';
     settings.telegram.botToken = botToken || '';
     settings.telegram.chatId = chatId || '';
@@ -2609,9 +2615,9 @@ app.post('/api/settings/telegram', (req, res) => {
     settings.telegram.notifyOnPingTimeout = notifyOnPingTimeout === true || notifyOnPingTimeout === 'true';
     settings.telegram.notifyOnPingHighLatency = notifyOnPingHighLatency === true || notifyOnPingHighLatency === 'true';
     settings.telegram.pingLatencyThreshold = parseInt(pingLatencyThreshold) || 50;
-    
+
     saveSettings();
-    
+
     // Reinitialize Telegram bot if settings changed
     if (settings.telegram.enabled && settings.telegram.botToken) {
       try {
@@ -2624,7 +2630,7 @@ app.post('/api/settings/telegram', (req, res) => {
       telegramBot = null;
       console.log('[TELEGRAM] Bot disabled');
     }
-    
+
     res.json({
       success: true,
       message: 'Telegram settings saved successfully',
@@ -2656,14 +2662,14 @@ app.post('/api/settings/telegram/test', async (req, res) => {
     if (!telegramBot || !settings.telegram || !settings.telegram.enabled || !settings.telegram.chatId) {
       return res.status(400).json({ error: 'Telegram bot is not configured or enabled' });
     }
-    
+
     const testMessage = `🧪 <b>Telegram Bot Test</b>\n\n` +
-                        `✅ <b>Status:</b> Bot is working correctly!\n` +
-                        `⏰ <b>Time:</b> ${new Date().toLocaleString('id-ID')}\n` +
-                        `🤖 <b>Bot:</b> SMon Monitoring System`;
-    
+      `✅ <b>Status:</b> Bot is working correctly!\n` +
+      `⏰ <b>Time:</b> ${new Date().toLocaleString('id-ID')}\n` +
+      `🤖 <b>Bot:</b> SMon Monitoring System`;
+
     await telegramBot.sendMessage(settings.telegram.chatId, testMessage, { parse_mode: 'HTML' });
-    
+
     res.json({
       success: true,
       message: 'Test message sent successfully'
@@ -2677,19 +2683,19 @@ app.post('/api/settings/telegram/test', async (req, res) => {
 // API to save email settings
 app.post('/api/settings/email', (req, res) => {
   try {
-    const { 
-      enabled, 
-      smtpHost, 
-      smtpPort, 
-      smtpSecure, 
-      smtpUser, 
-      smtpPass, 
-      fromEmail, 
+    const {
+      enabled,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+      smtpUser,
+      smtpPass,
+      fromEmail,
       toEmail,
-      notifyOnDeviceDown, 
-      notifyOnDeviceUp, 
-      notifyOnHighCpu, 
-      cpuThreshold, 
+      notifyOnDeviceDown,
+      notifyOnDeviceUp,
+      notifyOnHighCpu,
+      cpuThreshold,
       notifyOnInterfaceDown,
       notifyOnPingDown,
       notifyOnPingUp,
@@ -2697,11 +2703,11 @@ app.post('/api/settings/email', (req, res) => {
       notifyOnPingHighLatency,
       pingLatencyThreshold
     } = req.body;
-    
+
     if (!settings.email) {
       settings.email = {};
     }
-    
+
     settings.email.enabled = enabled === true || enabled === 'true';
     settings.email.smtpHost = smtpHost || '';
     settings.email.smtpPort = parseInt(smtpPort) || 587;
@@ -2720,9 +2726,9 @@ app.post('/api/settings/email', (req, res) => {
     settings.email.notifyOnPingTimeout = notifyOnPingTimeout === true || notifyOnPingTimeout === 'true';
     settings.email.notifyOnPingHighLatency = notifyOnPingHighLatency === true || notifyOnPingHighLatency === 'true';
     settings.email.pingLatencyThreshold = parseInt(pingLatencyThreshold) || 50;
-    
+
     saveSettings();
-    
+
     // Reinitialize email transporter if settings changed
     if (settings.email.enabled && settings.email.smtpHost && settings.email.smtpUser && settings.email.smtpPass) {
       try {
@@ -2743,7 +2749,7 @@ app.post('/api/settings/email', (req, res) => {
       emailTransporter = null;
       console.log('[EMAIL] SMTP transporter disabled');
     }
-    
+
     res.json({
       success: true,
       message: 'Email settings saved successfully',
@@ -2780,7 +2786,7 @@ app.post('/api/settings/email/test', async (req, res) => {
     if (!emailTransporter || !settings.email || !settings.email.enabled || !settings.email.toEmail) {
       return res.status(400).json({ error: 'Email is not configured or enabled' });
     }
-    
+
     const timestamp = new Date().toLocaleString('id-ID');
     const subject = '🧪 Email Test - SMon Monitoring System';
     const htmlContent = `
@@ -2796,9 +2802,9 @@ app.post('/api/settings/email/test', async (req, res) => {
         <p style="color: #666; font-size: 12px;">This is a test email from SMon - SNMP Monitoring Dashboard</p>
       </div>
     `;
-    
+
     await sendEmail(subject, htmlContent);
-    
+
     res.json({
       success: true,
       message: 'Test email sent successfully'
@@ -2857,40 +2863,40 @@ app.post('/api/settings/flapping', (req, res) => {
 app.post('/api/settings/website', (req, res) => {
   try {
     const { enabled, interval, timeout, notifyOnDown, notifyOnUp, notifyOnSslExpiry, sslExpiryWarningDays } = req.body;
-    
+
     if (!settings.website) {
       settings.website = {};
     }
-    
+
     settings.website.enabled = enabled !== undefined ? enabled : true;
-    
+
     if (interval !== undefined) {
       if (interval < 30000) {
         return res.status(400).json({ error: 'Monitoring interval must be at least 30 seconds' });
       }
       settings.website.interval = interval;
     }
-    
+
     if (timeout !== undefined) {
       if (timeout < 1000) {
         return res.status(400).json({ error: 'Request timeout must be at least 1 second' });
       }
       settings.website.timeout = timeout;
     }
-    
+
     settings.website.notifyOnDown = notifyOnDown !== undefined ? notifyOnDown : true;
     settings.website.notifyOnUp = notifyOnUp !== undefined ? notifyOnUp : true;
     settings.website.notifyOnSslExpiry = notifyOnSslExpiry !== undefined ? notifyOnSslExpiry : true;
-    
+
     if (sslExpiryWarningDays !== undefined) {
       if (sslExpiryWarningDays < 1 || sslExpiryWarningDays > 90) {
         return res.status(400).json({ error: 'SSL expiry warning must be between 1 and 90 days' });
       }
       settings.website.sslExpiryWarningDays = sslExpiryWarningDays;
     }
-    
+
     saveSettings();
-    
+
     res.json({
       success: true,
       website: settings.website
@@ -2967,10 +2973,10 @@ app.post('/api/discover-interfaces', (req, res) => {
         } catch (e) {
           // Ignore close errors
         }
-        
+
         const filteredInterfaces = Object.values(interfaceMap)
           .sort((a, b) => a.index - b.index);
-        
+
         console.log(`[DISCOVER] SNMP discovery completed, found ${filteredInterfaces.length} interfaces for ${vendor} device`);
         res.json({ interfaces: filteredInterfaces, vendor });
       }
@@ -2982,7 +2988,7 @@ app.post('/api/discover-interfaces', (req, res) => {
     }, 10000); // 10 second timeout for discovery
 
     // First, get system description to detect vendor
-    tempSession.get(['1.3.6.1.2.1.1.1.0'], function(error, varbinds) {
+    tempSession.get(['1.3.6.1.2.1.1.1.0'], function (error, varbinds) {
       if (!error && varbinds && varbinds[0] && !snmp.isVarbindError(varbinds[0])) {
         const sysDescr = varbinds[0].value.toString();
         vendor = detectVendor(sysDescr);
@@ -2990,12 +2996,12 @@ app.post('/api/discover-interfaces', (req, res) => {
       } else {
         console.log(`[DISCOVER] Could not detect vendor for ${host}, using standard MIB-II`);
       }
-      
+
       // Now proceed with interface discovery
       const ifDescrOid = getVendorOID(vendor, 'ifDescr');
       console.log(`[DISCOVER] Using OID ${ifDescrOid} for interface discovery`);
-      
-      tempSession.walk(ifDescrOid, 30, function(varbinds) {
+
+      tempSession.walk(ifDescrOid, 30, function (varbinds) {
         varbinds.forEach(vb => {
           if (snmp.isVarbindError(vb)) {
             // Skip errors
@@ -3003,7 +3009,7 @@ app.post('/api/discover-interfaces', (req, res) => {
             const oidParts = vb.oid.split('.');
             const index = oidParts[oidParts.length - 1];
             const name = vb.value.toString().trim();
-            
+
             if (!interfaceMap[index]) {
               interfaceMap[index] = {
                 index: parseInt(index),
@@ -3013,26 +3019,26 @@ app.post('/api/discover-interfaces', (req, res) => {
             }
           }
         });
-      }, function(error) {
+      }, function (error) {
         if (error && !error.toString().includes('Socket forcibly closed')) {
           console.log(`[DISCOVER] SNMP walk error: ${error}`);
         }
-        
+
         // After ifDescr walk completes, check for interfaces with empty names
         const emptyNameIndices = Object.keys(interfaceMap)
           .filter(idx => !interfaceMap[idx].hasName)
           .map(idx => parseInt(idx));
-        
+
         console.log(`[DISCOVER] Found ${Object.keys(interfaceMap).length} interfaces, ${emptyNameIndices.length} with empty names`);
-        
+
         if (emptyNameIndices.length > 0 && emptyNameIndices.length <= 100) {
           // Try to get ifName for interfaces with empty descriptions
           const ifNameOids = emptyNameIndices.map(idx => `1.3.6.1.2.1.31.1.1.1.1.${idx}`);
-          
+
           pendingIfNameQuery = true;
           console.log(`[DISCOVER] Attempting to get ifName for ${emptyNameIndices.length} interfaces with empty descriptions`);
-          
-          tempSession.get(ifNameOids, function(error, varbinds) {
+
+          tempSession.get(ifNameOids, function (error, varbinds) {
             if (!error && varbinds) {
               varbinds.forEach((vb, idx) => {
                 if (!snmp.isVarbindError(vb) && vb.value) {
@@ -3048,7 +3054,7 @@ app.post('/api/discover-interfaces', (req, res) => {
             } else if (error && !error.toString().includes('Socket forcibly closed')) {
               console.log(`[DISCOVER] ifName fallback error: ${error}`);
             }
-            
+
             pendingIfNameQuery = false;
             clearTimeout(timeout);
             sendResponse();
@@ -3073,11 +3079,11 @@ app.post('/api/devices', (req, res) => {
     if (!id || !name || !host || !community) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     if (snmpDevices[id]) {
       return res.status(400).json({ error: 'Device ID already exists' });
     }
-    
+
     const newDevice = {
       id,
       name,
@@ -3087,19 +3093,19 @@ app.post('/api/devices', (req, res) => {
       enabled: true,
       selectedInterfaces: selectedInterfaces || []
     };
-    
+
     snmpDevices[id] = newDevice;
     config.snmpDevices.push(newDevice);
     saveConfig();
-    
+
     // Create SNMP session for new device
     snmpSessions[id] = snmp.createSession(host, community, {
       timeout: 5000,
       retries: 1
     });
-    
+
     console.log(`Device added: ${name} (${host}) - Vendor: ${newDevice.vendor}`);
-    
+
     // Log device addition event
     logEvent('device_added', 'info', 'System', `Device "${name}" (${host}) has been added to monitoring`, {
       deviceId: id,
@@ -3107,7 +3113,7 @@ app.post('/api/devices', (req, res) => {
       host: host,
       vendor: newDevice.vendor
     });
-    
+
     res.json(newDevice);
   } catch (err) {
     console.error('Error adding device:', err);
@@ -3175,14 +3181,14 @@ app.delete('/api/devices/:deviceId', async (req, res) => {
     }
 
     console.log(`[DELETE DEVICE] Device deleted successfully: ${deviceId} (${device.name})`);
-    
+
     // Log device removal event
     logEvent('device_removed', 'warning', 'System', `Device "${device.name}" (${device.host}) has been removed from monitoring`, {
       deviceId: deviceId,
       deviceName: device.name,
       host: device.host
     });
-    
+
     res.json({
       message: 'Device deleted successfully',
       deviceId: deviceId,
@@ -3199,15 +3205,15 @@ app.put('/api/devices/:deviceId', (req, res) => {
   try {
     const { deviceId } = req.params;
     const { name, host, community, selectedInterfaces, enabled } = req.body;
-    
+
     if (!snmpDevices[deviceId]) {
       return res.status(404).json({ error: 'Device not found' });
     }
-    
+
     if (!name || !host || !community) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     // Update device in memory
     snmpDevices[deviceId].name = name;
     snmpDevices[deviceId].host = host;
@@ -3216,25 +3222,25 @@ app.put('/api/devices/:deviceId', (req, res) => {
     if (enabled !== undefined) {
       snmpDevices[deviceId].enabled = enabled;
     }
-    
+
     // Update in config.json
     const deviceIndex = config.snmpDevices.findIndex(d => d.id === deviceId);
     if (deviceIndex !== -1) {
       config.snmpDevices[deviceIndex] = snmpDevices[deviceId];
     }
     saveConfig();
-    
+
     // Close old SNMP session if host or community changed
     if (snmpSessions[deviceId]) {
       delete snmpSessions[deviceId];
     }
-    
+
     // Create new SNMP session with updated credentials
     snmpSessions[deviceId] = snmp.createSession(host, community, {
       timeout: 5000,
       retries: 1
     });
-    
+
     res.json(snmpDevices[deviceId]);
   } catch (err) {
     console.error('Error updating device:', err);
@@ -3249,7 +3255,7 @@ app.get('/api/devices/:deviceId/interfaces', (req, res) => {
     if (!snmpDevices[deviceId]) {
       return res.status(404).json({ error: 'Device not found' });
     }
-    
+
     const device = snmpDevices[deviceId];
     // Handle both old format (array of strings) and new format (array of {index, name})
     const interfaces = (device.selectedInterfaces || []).map((iface, idx) => {
@@ -3262,7 +3268,7 @@ app.get('/api/devices/:deviceId/interfaces', (req, res) => {
         return { index: iface.index, name: iface.name };
       }
     }).filter(iface => iface !== null); // Remove null entries
-    
+
     res.json(interfaces);
   } catch (err) {
     console.error('Error getting interfaces:', err);
@@ -3275,20 +3281,20 @@ app.post('/api/devices/:deviceId/select-interfaces', (req, res) => {
   try {
     const { deviceId } = req.params;
     const { selectedInterfaces } = req.body;
-    
+
     if (!snmpDevices[deviceId]) {
       return res.status(404).json({ error: 'Device not found' });
     }
-    
+
     snmpDevices[deviceId].selectedInterfaces = selectedInterfaces || [];
-    
+
     // Update config
     const deviceInConfig = config.snmpDevices.find(d => d.id === deviceId);
     if (deviceInConfig) {
       deviceInConfig.selectedInterfaces = selectedInterfaces || [];
       saveConfig();
     }
-    
+
     res.json({ message: 'Interfaces updated', device: snmpDevices[deviceId] });
   } catch (err) {
     console.error('Error updating interfaces:', err);
@@ -3322,12 +3328,12 @@ app.get('/api/weathermap/links', async (req, res) => {
             try {
               // Query InfluxDB for bandwidth data for this interface
               const bandwidthData = await getCurrentBandwidth(deviceId, iface.name);
-              
+
               if (bandwidthData && bandwidthData.rxMbps !== null && bandwidthData.txMbps !== null) {
                 // Calculate load based on speed
                 const totalMbps = (bandwidthData.rxMbps + bandwidthData.txMbps);
                 let load = 0;
-                
+
                 if (bandwidthData.speed && bandwidthData.speed > 0) {
                   // Speed is in bps, convert to Mbps for calculation
                   const speedMbps = bandwidthData.speed / 1000000;
@@ -3335,7 +3341,7 @@ app.get('/api/weathermap/links', async (req, res) => {
                 } else {
                   // If no speed data, estimate based on interface type
                   let estimatedSpeedMbps = 1000; // Default 1Gbps
-                  
+
                   const interfaceName = iface.name.toLowerCase();
                   if (interfaceName.includes('sfp') || interfaceName.includes('10g')) {
                     estimatedSpeedMbps = 10000; // 10Gbps for SFP/SFP+ interfaces
@@ -3344,7 +3350,7 @@ app.get('/api/weathermap/links', async (req, res) => {
                   } else if (interfaceName.includes('vlan') || interfaceName.includes('bridge')) {
                     estimatedSpeedMbps = 1000; // 1Gbps for VLAN/Bridge
                   }
-                  
+
                   load = Math.min(100, (totalMbps / estimatedSpeedMbps) * 100);
                 }
 
@@ -3369,7 +3375,7 @@ app.get('/api/weathermap/links', async (req, res) => {
     }
 
     console.log(`[WEATHERMAP] Returning ${devices.length} devices and ${links.length} links`);
-    
+
     res.json({
       devices: devices,
       links: links
@@ -3384,13 +3390,13 @@ app.get('/api/weathermap/links', async (req, res) => {
 app.get('/api/devices/:deviceId/interfaces/:interfaceName/bandwidth', async (req, res) => {
   try {
     const { deviceId, interfaceName } = req.params;
-    
+
     if (!snmpDevices[deviceId]) {
       return res.status(404).json({ error: 'Device not found' });
     }
 
     const bandwidthData = await getCurrentBandwidth(deviceId, interfaceName);
-    
+
     if (!bandwidthData) {
       return res.json({ rxMbps: 0, txMbps: 0 });
     }
@@ -3559,7 +3565,7 @@ app.get('/api/data', async (req, res) => {
     const direction = req.query.direction || 'all'; // 'rx', 'tx', or 'all'
     const metric = req.query.metric || 'bandwidth'; // 'bandwidth' or 'cpu'
     const timeRange = req.query.timeRange || '-24h';
-    
+
     if (!deviceId || !snmpDevices[deviceId]) {
       return res.status(400).json({ error: 'Device not found' });
     }
@@ -3567,7 +3573,7 @@ app.get('/api/data', async (req, res) => {
     // Build InfluxDB query with time range support
     let rangeStart = timeRange;
     let rangeStop = '';
-    
+
     if (timeRange.startsWith('custom:')) {
       // Format: custom:2024-11-20T00:00:00,2024-11-20T23:59:59
       try {
@@ -3580,15 +3586,15 @@ app.get('/api/data', async (req, res) => {
         } else {
           let startDate = parts[0].trim();
           let endDate = parts[1].trim();
-          
+
           // If no time specified, add 00:00:00 and 23:59:59
           if (startDate.length === 10) startDate += 'T00:00:00';
           if (endDate.length === 10) endDate += 'T23:59:59';
-          
+
           // Convert to ISO format with Z suffix for InfluxDB
           const startIso = new Date(startDate).toISOString();
           const endIso = new Date(endDate).toISOString();
-          
+
           // Validate dates
           if (isNaN(new Date(startIso).getTime()) || isNaN(new Date(endIso).getTime())) {
             console.error('[API/DATA] Invalid date format:', { startDate, endDate });
@@ -3600,7 +3606,7 @@ app.get('/api/data', async (req, res) => {
             rangeStop = '';
           } else {
             console.log(`[API/DATA] Custom range - Start: ${startDate} -> ${startIso}, End: ${endDate} -> ${endIso}`);
-            
+
             // For custom dates, use time() function to convert strings - NO quotes needed in time() function
             rangeStart = `time(v: "${startIso}")`;
             rangeStop = `, stop: time(v: "${endIso}")`;
@@ -3625,7 +3631,7 @@ app.get('/api/data', async (req, res) => {
       |> filter(fn: (r) => r._field == "value")
       |> filter(fn: (r) => r.device == "${deviceId}")
     `;
-    
+
     if (metric === 'cpu') {
       query += ` |> filter(fn: (r) => r.metric == "cpu")`;
       query += `
@@ -3645,12 +3651,12 @@ app.get('/api/data', async (req, res) => {
         |> filter(fn: (r) => r._value >= 0)
       `;
     }
-    
+
     console.log('[API/DATA] Query:', query.substring(0, 300));
     const data = [];
     let hasError = false;
     let responded = false;
-    
+
     // Add timeout to prevent hanging queries
     const queryTimeout = setTimeout(() => {
       if (!responded) {
@@ -3659,12 +3665,12 @@ app.get('/api/data', async (req, res) => {
         res.status(504).json({ error: 'Query timeout' });
       }
     }, 30000);
-    
+
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
         data.push({ time: o._time, value: o._value });
-        
+
         // Limit data points to prevent memory bloat
         if (data.length > 10000) {
           console.warn('[API/DATA] Query result too large, truncating');
@@ -3706,356 +3712,360 @@ function pollSNMP() {
   try {
     const pollTimestamp = new Date(); // Capture timestamp at start of polling cycle
     console.log(`[POLLING] Starting poll at ${pollTimestamp.toISOString()}`);
-    
+
     Object.keys(snmpDevices).forEach(deviceId => {
-    const device = snmpDevices[deviceId];
-    
-    // Track device status - assume device is online at start of polling
-    const previousStatus = deviceStatusHistory[deviceId];
-    const currentStatus = { alive: true, lastCheck: Date.now() };
-    
-    // Initialize status history if not exists
-    if (!deviceStatusHistory[deviceId]) {
+      const device = snmpDevices[deviceId];
+
+      // Track device status - assume device is online at start of polling
+      const previousStatus = deviceStatusHistory[deviceId];
+      const currentStatus = { alive: true, lastCheck: Date.now() };
+
+      // Initialize status history if not exists
+      if (!deviceStatusHistory[deviceId]) {
+        deviceStatusHistory[deviceId] = currentStatus;
+      }
+
+      // Check for status changes (device coming online)
+      if (previousStatus && !previousStatus.alive) {
+        notifyDeviceStatus(deviceId, device.name, 'up', 'Device responded to SNMP polling');
+        logEvent('device_online', 'info', device.name, `Device "${device.name}" (${device.host}) is now online`, {
+          deviceId: deviceId,
+          deviceName: device.name,
+          host: device.host
+        });
+      }
+
+      // Update status history
       deviceStatusHistory[deviceId] = currentStatus;
-    }
-    
-    // Check for status changes (device coming online)
-    if (previousStatus && !previousStatus.alive) {
-      notifyDeviceStatus(deviceId, device.name, 'up', 'Device responded to SNMP polling');
-      logEvent('device_online', 'info', device.name, `Device "${device.name}" (${device.host}) is now online`, {
-        deviceId: deviceId,
-        deviceName: device.name,
-        host: device.host
-      });
-    }
-    
-    // Update status history
-    deviceStatusHistory[deviceId] = currentStatus;
-    
-    // Skip if no interfaces selected
-    if (!device.selectedInterfaces || device.selectedInterfaces.length === 0) {
-      console.log(`[${deviceId}] No interfaces selected, skipping polling`);
-      return;
-    }
-    
-    console.log(`[${deviceId}] Retrieved ${device.selectedInterfaces.length} interfaces from config`);
-    
-    // Use selected interfaces directly
-    const ifacesToPoll = device.selectedInterfaces.map(iface => {
-      if (typeof iface === 'string') {
-        // Old format: interface name as string, we need to skip these as they don't have indices
-        console.warn(`[${deviceId}] Skipping interface ${iface} - stored as string without index`);
-        return null;
-      } else {
-        // New format: {index, name}
-        return {
-          index: iface.index,
-          name: iface.name
-        };
+
+      // Skip if no interfaces selected
+      if (!device.selectedInterfaces || device.selectedInterfaces.length === 0) {
+        console.log(`[${deviceId}] No interfaces selected, skipping polling`);
+        return;
       }
-    }).filter(iface => iface !== null); // Remove null entries
-    
-    ifacesToPoll.forEach(iface => {
-      const vendor = device.vendor || 'standard';
-      
-      // Get appropriate OIDs for this vendor - try 64-bit counters first for high-speed interfaces
-      // Standard IF-MIB 64-bit counters (should work on most modern devices)
-      const rxOid64 = `1.3.6.1.2.1.31.1.1.1.6.${iface.index}`; // ifHCInOctets
-      const txOid64 = `1.3.6.1.2.1.31.1.1.1.10.${iface.index}`; // ifHCOutOctets
-      
-      // Fallback to vendor-specific or standard 32-bit counters
-      const rxOid32 = `${getVendorOID(vendor, 'ifInOctets')}.${iface.index}`;
-      const txOid32 = `${getVendorOID(vendor, 'ifOutOctets')}.${iface.index}`;
-      
-      console.log(`[${deviceId}] Trying 64-bit counters first - RX: ${rxOid64}, TX: ${txOid64}`);
-      
-      // Query RX traffic - try 64-bit first, then 32-bit
-      snmpSessions[deviceId].get([rxOid64], function(rxError64, rxVarbinds64) {
-        let rxValue = null;
-        let use64bit = false;
-        
-        if (rxError64) {
-          console.log(`[${deviceId}] 64-bit RX error for ${iface.name}, falling back to 32-bit: ${rxError64.message}`);
-        } else if (!rxVarbinds64 || snmp.isVarbindError(rxVarbinds64[0])) {
-          console.log(`[${deviceId}] 64-bit RX varbind error for ${iface.name}, falling back to 32-bit`);
+
+      console.log(`[${deviceId}] Retrieved ${device.selectedInterfaces.length} interfaces from config`);
+
+      // Use selected interfaces directly
+      const ifacesToPoll = device.selectedInterfaces.map(iface => {
+        if (typeof iface === 'string') {
+          // Old format: interface name as string, we need to skip these as they don't have indices
+          console.warn(`[${deviceId}] Skipping interface ${iface} - stored as string without index`);
+          return null;
         } else {
-          // Try to convert 64-bit value - it might be a BigInt, string, number, or Uint8Array
-          let val = rxVarbinds64[0].value;
-          
-          // Debug: Log raw value info
-          if (iface.name === 'sfp-sfpplus14') {
-            console.log(`[${deviceId}] DEBUG sfp-sfpplus14 RX 64-bit value: type=${typeof val}, value=${val}, toString=${Object.prototype.toString.call(val)}`);
-          }
-          
-          // Handle Uint8Array (binary buffer from SNMP)
-          if (val instanceof Uint8Array || (typeof val === 'object' && val.buffer instanceof ArrayBuffer)) {
-            // Convert Uint8Array to number
-            let num = 0n; // Use BigInt for 64-bit
-            const bytes = new Uint8Array(val);
-            for (let i = 0; i < bytes.length; i++) {
-              num = (num << 8n) | BigInt(bytes[i]);
-            }
-            rxValue = Number(num);
-            use64bit = true;
+          // New format: {index, name}
+          return {
+            index: iface.index,
+            name: iface.name
+          };
+        }
+      }).filter(iface => iface !== null); // Remove null entries
+
+      ifacesToPoll.forEach(iface => {
+        const vendor = device.vendor || 'standard';
+
+        // Get appropriate OIDs for this vendor - try 64-bit counters first for high-speed interfaces
+        // Use getVendorOID to handle vendor-specific mappings (including Mikrotik)
+        const rxOid64 = `${getVendorOID(vendor, 'ifHCInOctets')}.${iface.index}`;
+        const txOid64 = `${getVendorOID(vendor, 'ifHCOutOctets')}.${iface.index}`;
+
+        // Fallback to vendor-specific or standard 32-bit counters
+        const rxOid32 = `${getVendorOID(vendor, 'ifInOctets')}.${iface.index}`;
+        const txOid32 = `${getVendorOID(vendor, 'ifOutOctets')}.${iface.index}`;
+
+        console.log(`[${deviceId}] Trying 64-bit counters first - RX: ${rxOid64}, TX: ${txOid64}`);
+
+        // Query RX traffic - try 64-bit first, then 32-bit
+        snmpSessions[deviceId].get([rxOid64], function (rxError64, rxVarbinds64) {
+          let rxValue = null;
+          let use64bit = false;
+
+          if (rxError64) {
+            console.log(`[${deviceId}] 64-bit RX error for ${iface.name}, falling back to 32-bit: ${rxError64.message}`);
+          } else if (!rxVarbinds64 || snmp.isVarbindError(rxVarbinds64[0])) {
+            console.log(`[${deviceId}] 64-bit RX varbind error for ${iface.name}, falling back to 32-bit`);
+          } else {
+            // Try to convert 64-bit value - it might be a BigInt, string, number, or Uint8Array
+            let val = rxVarbinds64[0].value;
+
+            // Debug: Log raw value info
             if (iface.name === 'sfp-sfpplus14') {
-              console.log(`[${deviceId}] DEBUG Converted Uint8Array RX to: ${rxValue}`);
+              console.log(`[${deviceId}] DEBUG sfp-sfpplus14 RX 64-bit value: type=${typeof val}, value=${val}, toString=${Object.prototype.toString.call(val)}`);
             }
-          } 
-          // Check if it's a valid number or can be converted to number
-          else if (typeof val === 'bigint') {
-            rxValue = Number(val);
-            use64bit = true;
-          } else if (typeof val === 'string') {
-            // Try parsing string to number
-            const parsed = parseInt(val, 10);
-            if (!isNaN(parsed)) {
-              rxValue = parsed;
+
+            // Handle Uint8Array (binary buffer from SNMP)
+            if (val instanceof Uint8Array || (typeof val === 'object' && val.buffer instanceof ArrayBuffer)) {
+              // Convert Uint8Array to number
+              let num = 0n; // Use BigInt for 64-bit
+              const bytes = new Uint8Array(val);
+              for (let i = 0; i < bytes.length; i++) {
+                num = (num << 8n) | BigInt(bytes[i]);
+              }
+              rxValue = Number(num);
+              use64bit = true;
+              if (iface.name === 'sfp-sfpplus14') {
+                console.log(`[${deviceId}] DEBUG Converted Uint8Array RX to: ${rxValue}`);
+              }
+            }
+            // Check if it's a valid number or can be converted to number
+            else if (typeof val === 'bigint') {
+              rxValue = Number(val);
+              use64bit = true;
+            } else if (typeof val === 'string') {
+              // Try parsing string to number
+              const parsed = parseInt(val, 10);
+              if (!isNaN(parsed)) {
+                rxValue = parsed;
+                use64bit = true;
+              }
+            } else if (typeof val === 'number' && !isNaN(val)) {
+              rxValue = val;
               use64bit = true;
             }
-          } else if (typeof val === 'number' && !isNaN(val)) {
-            rxValue = val;
-            use64bit = true;
+
+            if (!use64bit) {
+              console.log(`[${deviceId}] Failed to parse 64-bit RX counter for ${iface.name}: Parsed value is invalid: ${typeof rxVarbinds64[0].value} = ${rxVarbinds64[0].value}`);
+              // Log specific warning for PPoE interfaces failing 64-bit check
+              if (iface.name.toLowerCase().includes('pppoe') || iface.name.toLowerCase().includes('ppoe')) {
+                console.warn(`[${deviceId}] [MIKROTIK-DEBUG] PPPoE interface ${iface.name} failed 64-bit OID check. OID used: ${rxOid64}. Falling back to 32-bit. This may cause graphing issues on high-speed links.`);
+              }
+            }
           }
-          
+
+          // If 64-bit didn't work, try 32-bit
           if (!use64bit) {
-            console.log(`[${deviceId}] Failed to parse 64-bit RX counter for ${iface.name}: Parsed value is invalid: ${typeof rxVarbinds64[0].value} = ${rxVarbinds64[0].value}`);
-          }
-        }
-        
-        // If 64-bit didn't work, try 32-bit
-        if (!use64bit) {
-          snmpSessions[deviceId].get([rxOid32], function(rxError32, rxVarbinds32) {
-            if (rxError32) {
-              console.error(`[${deviceId}] SNMP RX error for interface ${iface.name}:`, rxError32.message);
-            } else if (!rxVarbinds32 || snmp.isVarbindError(rxVarbinds32[0])) {
-              console.error(`[${deviceId}] SNMP RX varbind error for ${iface.name}:`, rxVarbinds32 ? snmp.varbindError(rxVarbinds32[0]) : 'No varbinds');
-            } else {
-              let val = rxVarbinds32[0].value;
-              let rxVal = val;
-              
-              // Try to convert if needed
-              if (typeof val === 'bigint') {
-                rxVal = Number(val);
-              } else if (typeof val === 'string') {
-                const parsed = parseInt(val, 10);
-                if (!isNaN(parsed)) rxVal = parsed;
-              }
-              
-              if (typeof rxVal === 'number' && !isNaN(rxVal)) {
-                console.log(`[${deviceId}] Using 32-bit RX counter for ${iface.name}: ${rxVal}`);
-                processRxData(deviceId, device, iface, rxVal, pollTimestamp);
+            snmpSessions[deviceId].get([rxOid32], function (rxError32, rxVarbinds32) {
+              if (rxError32) {
+                console.error(`[${deviceId}] SNMP RX error for interface ${iface.name}:`, rxError32.message);
+              } else if (!rxVarbinds32 || snmp.isVarbindError(rxVarbinds32[0])) {
+                console.error(`[${deviceId}] SNMP RX varbind error for ${iface.name}:`, rxVarbinds32 ? snmp.varbindError(rxVarbinds32[0]) : 'No varbinds');
               } else {
-                console.error(`[${deviceId}] SNMP RX invalid value for ${iface.name}:`, rxVal);
-              }
-            }
-          });
-        } else {
-          console.log(`[${deviceId}] Using 64-bit RX counter for ${iface.name}: ${rxValue}`);
-          processRxData(deviceId, device, iface, rxValue, pollTimestamp);
-        }
-      });
-      
-      // Query TX traffic - try 64-bit first, then 32-bit
-      snmpSessions[deviceId].get([txOid64], function(txError64, txVarbinds64) {
-        let txValue = null;
-        let use64bit = false;
-        
-        if (txError64) {
-          console.log(`[${deviceId}] 64-bit TX error for ${iface.name}, falling back to 32-bit: ${txError64.message}`);
-        } else if (!txVarbinds64 || snmp.isVarbindError(txVarbinds64[0])) {
-          console.log(`[${deviceId}] 64-bit TX varbind error for ${iface.name}, falling back to 32-bit`);
-        } else {
-          // Try to convert 64-bit value - it might be a BigInt, string, or number
-          let val = txVarbinds64[0].value;
-          
-          // Debug: Log raw value info
-          if (iface.name === 'sfp-sfpplus14') {
-            console.log(`[${deviceId}] DEBUG sfp-sfpplus14 TX 64-bit value: type=${typeof val}, value=${val}, toString=${Object.prototype.toString.call(val)}`);
-          }
-          
-          // Check if it's a valid number or can be converted to number
-          // Handle Uint8Array (binary buffer from SNMP)
-          if (val instanceof Uint8Array || (typeof val === 'object' && val.buffer instanceof ArrayBuffer)) {
-            // Convert Uint8Array to number
-            let num = 0n; // Use BigInt for 64-bit
-            const bytes = new Uint8Array(val);
-            for (let i = 0; i < bytes.length; i++) {
-              num = (num << 8n) | BigInt(bytes[i]);
-            }
-            txValue = Number(num);
-            use64bit = true;
-            if (iface.name === 'sfp-sfpplus14') {
-              console.log(`[${deviceId}] DEBUG Converted Uint8Array TX to: ${txValue}`);
-            }
-          } 
-          // Check if it's a valid number or can be converted to number
-          else if (typeof val === 'bigint') {
-            txValue = Number(val);
-            use64bit = true;
-          } else if (typeof val === 'string') {
-            // Try parsing string to number
-            const parsed = parseInt(val, 10);
-            if (!isNaN(parsed)) {
-              txValue = parsed;
-              use64bit = true;
-            }
-          } else if (typeof val === 'number' && !isNaN(val)) {
-            txValue = val;
-            use64bit = true;
-          }
-          
-          if (!use64bit) {
-            console.log(`[${deviceId}] Failed to parse 64-bit TX counter for ${iface.name}: Parsed value is invalid: ${typeof txVarbinds64[0].value} = ${txVarbinds64[0].value}`);
-          }
-        }
-        
-        // If 64-bit didn't work, try 32-bit
-        if (!use64bit) {
-          snmpSessions[deviceId].get([txOid32], function(txError32, txVarbinds32) {
-            if (txError32) {
-              console.error(`[${deviceId}] SNMP TX error for interface ${iface.name}:`, txError32.message);
-            } else if (!txVarbinds32 || snmp.isVarbindError(txVarbinds32[0])) {
-              console.error(`[${deviceId}] SNMP TX varbind error for ${iface.name}:`, txVarbinds32 ? snmp.varbindError(txVarbinds32[0]) : 'No varbinds');
-            } else {
-              let val = txVarbinds32[0].value;
-              let txVal = val;
-              
-              // Try to convert if needed
-              if (typeof val === 'bigint') {
-                txVal = Number(val);
-              } else if (typeof val === 'string') {
-                const parsed = parseInt(val, 10);
-                if (!isNaN(parsed)) txVal = parsed;
-              }
-              
-              if (typeof txVal === 'number' && !isNaN(txVal)) {
-                console.log(`[${deviceId}] Using 32-bit TX counter for ${iface.name}: ${txVal}`);
-                processTxData(deviceId, device, iface, txVal, pollTimestamp);
-              } else {
-                console.error(`[${deviceId}] SNMP TX invalid value for ${iface.name}:`, txVal);
-              }
-            }
-          });
-        } else {
-          console.log(`[${deviceId}] Using 64-bit TX counter for ${iface.name}: ${txValue}`);
-          processTxData(deviceId, device, iface, txValue, pollTimestamp);
-        }
-      });
-    });
-    
-    // Poll CPU usage for this device - but only if CPU has been successfully detected before
-    // or if we haven't tried recently
-    const vendor = device.vendor || 'standard';
-    const cpuOid = getCpuOID(vendor);
-    
-    // Initialize device CPU status if not exists
-    if (!deviceCpuStatus[deviceId]) {
-      deviceCpuStatus[deviceId] = { hasCpu: null, lastAttempt: 0, failureCount: 0 };
-    }
-    
-    const cpuStatus = deviceCpuStatus[deviceId];
-    const now = Date.now();
-    const oneHourAgo = 60 * 60 * 1000; // 1 hour in milliseconds
-    
-    // Skip CPU polling if:
-    // 1. hasCpu is explicitly false (CPU not detected)
-    // 2. We've had more than 5 consecutive failures (likely no CPU support)
-    if (cpuStatus.hasCpu === false || cpuStatus.failureCount >= 5) {
-      if (cpuStatus.failureCount >= 5) {
-        // Re-check every hour to see if CPU is now available (in case of device restart)
-        if (now - cpuStatus.lastAttempt > oneHourAgo) {
-          console.log(`[${deviceId}] Retrying CPU polling after 1 hour (${cpuStatus.failureCount} failures)`);
-          cpuStatus.failureCount = 0; // Reset counter for re-attempt
-        } else {
-          // Still within cooldown period, skip CPU polling
-          return; // Skip rest of polling for this device (no return here, just skip CPU)
-        }
-      } else {
-        return; // Skip CPU polling
-      }
-    }
-    
-    if (cpuOid) {
-      console.log(`[${deviceId}] Polling CPU using ${vendor} OID: ${cpuOid}`);
-      
-      snmpSessions[deviceId].get([cpuOid], function(cpuError, cpuVarbinds) {
-        if (cpuError) {
-          // CPU query failed
-          cpuStatus.failureCount++;
-          console.warn(`[${deviceId}] SNMP CPU error (attempt ${cpuStatus.failureCount}): ${cpuError.message}`);
-          
-          // Try fallback to standard UCD-SNMP-MIB if vendor-specific OID fails
-          if (vendor !== 'standard' && cpuStatus.failureCount <= 2) {
-            const fallbackCpuOid = '1.3.6.1.4.1.2021.11.9.0'; // UCD-SNMP-MIB CPU usage
-            snmpSessions[deviceId].get([fallbackCpuOid], function(fallbackError, fallbackVarbinds) {
-              if (!fallbackError && fallbackVarbinds && !snmp.isVarbindError(fallbackVarbinds[0])) {
-                console.log(`[${deviceId}] CPU fallback successful`);
-                cpuStatus.hasCpu = true;
-                cpuStatus.failureCount = 0;
-                cpuStatus.lastAttempt = now;
-                
-                let cpuValue = parseFloat(fallbackVarbinds[0].value);
-                
-                // Mikrotik CPU values are often multiplied by 100, so divide by 100 for percentage
-                if (vendor === 'mikrotik' && cpuValue > 100) {
-                  cpuValue = cpuValue / 100;
+                let val = rxVarbinds32[0].value;
+                let rxVal = val;
+
+                // Try to convert if needed
+                if (typeof val === 'bigint') {
+                  rxVal = Number(val);
+                } else if (typeof val === 'string') {
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) rxVal = parsed;
                 }
-                
-                if (!isNaN(cpuValue) && cpuValue >= 0 && cpuValue <= 100) {
-                  processCpuData(deviceId, device, cpuValue, pollTimestamp);
-                }
-              } else {
-                // Fallback also failed, mark as no CPU
-                cpuStatus.failureCount++;
-                if (cpuStatus.failureCount >= 5) {
-                  cpuStatus.hasCpu = false;
-                  console.warn(`[${deviceId}] CPU SNMP not supported - disabling CPU polling`);
+
+                if (typeof rxVal === 'number' && !isNaN(rxVal)) {
+                  console.log(`[${deviceId}] Using 32-bit RX counter for ${iface.name}: ${rxVal}`);
+                  processRxData(deviceId, device, iface, rxVal, pollTimestamp);
+                } else {
+                  console.error(`[${deviceId}] SNMP RX invalid value for ${iface.name}:`, rxVal);
                 }
               }
-              cpuStatus.lastAttempt = now;
             });
           } else {
-            // No fallback or too many failures
+            console.log(`[${deviceId}] Using 64-bit RX counter for ${iface.name}: ${rxValue}`);
+            processRxData(deviceId, device, iface, rxValue, pollTimestamp);
+          }
+        });
+
+        // Query TX traffic - try 64-bit first, then 32-bit
+        snmpSessions[deviceId].get([txOid64], function (txError64, txVarbinds64) {
+          let txValue = null;
+          let use64bit = false;
+
+          if (txError64) {
+            console.log(`[${deviceId}] 64-bit TX error for ${iface.name}, falling back to 32-bit: ${txError64.message}`);
+          } else if (!txVarbinds64 || snmp.isVarbindError(txVarbinds64[0])) {
+            console.log(`[${deviceId}] 64-bit TX varbind error for ${iface.name}, falling back to 32-bit`);
+          } else {
+            // Try to convert 64-bit value - it might be a BigInt, string, or number
+            let val = txVarbinds64[0].value;
+
+            // Debug: Log raw value info
+            if (iface.name === 'sfp-sfpplus14') {
+              console.log(`[${deviceId}] DEBUG sfp-sfpplus14 TX 64-bit value: type=${typeof val}, value=${val}, toString=${Object.prototype.toString.call(val)}`);
+            }
+
+            // Check if it's a valid number or can be converted to number
+            // Handle Uint8Array (binary buffer from SNMP)
+            if (val instanceof Uint8Array || (typeof val === 'object' && val.buffer instanceof ArrayBuffer)) {
+              // Convert Uint8Array to number
+              let num = 0n; // Use BigInt for 64-bit
+              const bytes = new Uint8Array(val);
+              for (let i = 0; i < bytes.length; i++) {
+                num = (num << 8n) | BigInt(bytes[i]);
+              }
+              txValue = Number(num);
+              use64bit = true;
+              if (iface.name === 'sfp-sfpplus14') {
+                console.log(`[${deviceId}] DEBUG Converted Uint8Array TX to: ${txValue}`);
+              }
+            }
+            // Check if it's a valid number or can be converted to number
+            else if (typeof val === 'bigint') {
+              txValue = Number(val);
+              use64bit = true;
+            } else if (typeof val === 'string') {
+              // Try parsing string to number
+              const parsed = parseInt(val, 10);
+              if (!isNaN(parsed)) {
+                txValue = parsed;
+                use64bit = true;
+              }
+            } else if (typeof val === 'number' && !isNaN(val)) {
+              txValue = val;
+              use64bit = true;
+            }
+
+            if (!use64bit) {
+              console.log(`[${deviceId}] Failed to parse 64-bit TX counter for ${iface.name}: Parsed value is invalid: ${typeof txVarbinds64[0].value} = ${txVarbinds64[0].value}`);
+            }
+          }
+
+          // If 64-bit didn't work, try 32-bit
+          if (!use64bit) {
+            snmpSessions[deviceId].get([txOid32], function (txError32, txVarbinds32) {
+              if (txError32) {
+                console.error(`[${deviceId}] SNMP TX error for interface ${iface.name}:`, txError32.message);
+              } else if (!txVarbinds32 || snmp.isVarbindError(txVarbinds32[0])) {
+                console.error(`[${deviceId}] SNMP TX varbind error for ${iface.name}:`, txVarbinds32 ? snmp.varbindError(txVarbinds32[0]) : 'No varbinds');
+              } else {
+                let val = txVarbinds32[0].value;
+                let txVal = val;
+
+                // Try to convert if needed
+                if (typeof val === 'bigint') {
+                  txVal = Number(val);
+                } else if (typeof val === 'string') {
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) txVal = parsed;
+                }
+
+                if (typeof txVal === 'number' && !isNaN(txVal)) {
+                  console.log(`[${deviceId}] Using 32-bit TX counter for ${iface.name}: ${txVal}`);
+                  processTxData(deviceId, device, iface, txVal, pollTimestamp);
+                } else {
+                  console.error(`[${deviceId}] SNMP TX invalid value for ${iface.name}:`, txVal);
+                }
+              }
+            });
+          } else {
+            console.log(`[${deviceId}] Using 64-bit TX counter for ${iface.name}: ${txValue}`);
+            processTxData(deviceId, device, iface, txValue, pollTimestamp);
+          }
+        });
+      });
+
+      // Poll CPU usage for this device - but only if CPU has been successfully detected before
+      // or if we haven't tried recently
+      const vendor = device.vendor || 'standard';
+      const cpuOid = getCpuOID(vendor);
+
+      // Initialize device CPU status if not exists
+      if (!deviceCpuStatus[deviceId]) {
+        deviceCpuStatus[deviceId] = { hasCpu: null, lastAttempt: 0, failureCount: 0 };
+      }
+
+      const cpuStatus = deviceCpuStatus[deviceId];
+      const now = Date.now();
+      const oneHourAgo = 60 * 60 * 1000; // 1 hour in milliseconds
+
+      // Skip CPU polling if:
+      // 1. hasCpu is explicitly false (CPU not detected)
+      // 2. We've had more than 5 consecutive failures (likely no CPU support)
+      if (cpuStatus.hasCpu === false || cpuStatus.failureCount >= 5) {
+        if (cpuStatus.failureCount >= 5) {
+          // Re-check every hour to see if CPU is now available (in case of device restart)
+          if (now - cpuStatus.lastAttempt > oneHourAgo) {
+            console.log(`[${deviceId}] Retrying CPU polling after 1 hour (${cpuStatus.failureCount} failures)`);
+            cpuStatus.failureCount = 0; // Reset counter for re-attempt
+          } else {
+            // Still within cooldown period, skip CPU polling
+            return; // Skip rest of polling for this device (no return here, just skip CPU)
+          }
+        } else {
+          return; // Skip CPU polling
+        }
+      }
+
+      if (cpuOid) {
+        console.log(`[${deviceId}] Polling CPU using ${vendor} OID: ${cpuOid}`);
+
+        snmpSessions[deviceId].get([cpuOid], function (cpuError, cpuVarbinds) {
+          if (cpuError) {
+            // CPU query failed
+            cpuStatus.failureCount++;
+            console.warn(`[${deviceId}] SNMP CPU error (attempt ${cpuStatus.failureCount}): ${cpuError.message}`);
+
+            // Try fallback to standard UCD-SNMP-MIB if vendor-specific OID fails
+            if (vendor !== 'standard' && cpuStatus.failureCount <= 2) {
+              const fallbackCpuOid = '1.3.6.1.4.1.2021.11.9.0'; // UCD-SNMP-MIB CPU usage
+              snmpSessions[deviceId].get([fallbackCpuOid], function (fallbackError, fallbackVarbinds) {
+                if (!fallbackError && fallbackVarbinds && !snmp.isVarbindError(fallbackVarbinds[0])) {
+                  console.log(`[${deviceId}] CPU fallback successful`);
+                  cpuStatus.hasCpu = true;
+                  cpuStatus.failureCount = 0;
+                  cpuStatus.lastAttempt = now;
+
+                  let cpuValue = parseFloat(fallbackVarbinds[0].value);
+
+                  // Mikrotik CPU values are often multiplied by 100, so divide by 100 for percentage
+                  if (vendor === 'mikrotik' && cpuValue > 100) {
+                    cpuValue = cpuValue / 100;
+                  }
+
+                  if (!isNaN(cpuValue) && cpuValue >= 0 && cpuValue <= 100) {
+                    processCpuData(deviceId, device, cpuValue, pollTimestamp);
+                  }
+                } else {
+                  // Fallback also failed, mark as no CPU
+                  cpuStatus.failureCount++;
+                  if (cpuStatus.failureCount >= 5) {
+                    cpuStatus.hasCpu = false;
+                    console.warn(`[${deviceId}] CPU SNMP not supported - disabling CPU polling`);
+                  }
+                }
+                cpuStatus.lastAttempt = now;
+              });
+            } else {
+              // No fallback or too many failures
+              if (cpuStatus.failureCount >= 5) {
+                cpuStatus.hasCpu = false;
+                console.warn(`[${deviceId}] CPU SNMP not supported - disabling CPU polling`);
+              }
+              cpuStatus.lastAttempt = now;
+            }
+          } else if (snmp.isVarbindError(cpuVarbinds[0])) {
+            console.error(`[${deviceId}] SNMP CPU varbind error:`, snmp.varbindError(cpuVarbinds[0]));
+            cpuStatus.failureCount++;
             if (cpuStatus.failureCount >= 5) {
               cpuStatus.hasCpu = false;
               console.warn(`[${deviceId}] CPU SNMP not supported - disabling CPU polling`);
             }
             cpuStatus.lastAttempt = now;
-          }
-        } else if (snmp.isVarbindError(cpuVarbinds[0])) {
-          console.error(`[${deviceId}] SNMP CPU varbind error:`, snmp.varbindError(cpuVarbinds[0]));
-          cpuStatus.failureCount++;
-          if (cpuStatus.failureCount >= 5) {
-            cpuStatus.hasCpu = false;
-            console.warn(`[${deviceId}] CPU SNMP not supported - disabling CPU polling`);
-          }
-          cpuStatus.lastAttempt = now;
-        } else {
-          // CPU query successful
-          cpuStatus.hasCpu = true;
-          cpuStatus.failureCount = 0;
-          cpuStatus.lastAttempt = now;
-          
-          let cpuValue = parseFloat(cpuVarbinds[0].value);
-          
-          // Mikrotik CPU values are often multiplied by 100, so divide by 100 for percentage
-          if (vendor === 'mikrotik' && cpuValue > 100) {
-            cpuValue = cpuValue / 100;
-          }
-          
-          if (!isNaN(cpuValue) && cpuValue >= 0 && cpuValue <= 100) {
-            processCpuData(deviceId, device, cpuValue, pollTimestamp);
           } else {
-            console.log(`[${deviceId}] Invalid CPU value: ${cpuValue}`);
+            // CPU query successful
+            cpuStatus.hasCpu = true;
+            cpuStatus.failureCount = 0;
+            cpuStatus.lastAttempt = now;
+
+            let cpuValue = parseFloat(cpuVarbinds[0].value);
+
+            // Mikrotik CPU values are often multiplied by 100, so divide by 100 for percentage
+            if (vendor === 'mikrotik' && cpuValue > 100) {
+              cpuValue = cpuValue / 100;
+            }
+
+            if (!isNaN(cpuValue) && cpuValue >= 0 && cpuValue <= 100) {
+              processCpuData(deviceId, device, cpuValue, pollTimestamp);
+            } else {
+              console.log(`[${deviceId}] Invalid CPU value: ${cpuValue}`);
+            }
           }
-        }
-      });
-    } else {
-      console.log(`[${deviceId}] No CPU OID available for vendor: ${vendor}`);
-      cpuStatus.hasCpu = false;
-      cpuStatus.failureCount = 5; // Mark as disabled to skip future polling
-    }
-  });
+        });
+      } else {
+        console.log(`[${deviceId}] No CPU OID available for vendor: ${vendor}`);
+        cpuStatus.hasCpu = false;
+        cpuStatus.failureCount = 5; // Mark as disabled to skip future polling
+      }
+    });
   } catch (err) {
     console.error('[POLLING] Error in pollSNMP:', err);
   }
@@ -4065,21 +4075,21 @@ function pollSNMP() {
 function checkDeviceTimeouts() {
   const timeoutThreshold = 5 * 60 * 1000; // 5 minutes
   const now = Date.now();
-  
+
   Object.keys(snmpDevices).forEach(deviceId => {
     const device = snmpDevices[deviceId];
     const status = deviceStatusHistory[deviceId];
-    
+
     if (status && status.alive) {
       const timeSinceLastCheck = now - status.lastCheck;
-      
+
       if (timeSinceLastCheck > timeoutThreshold) {
         // Device has not responded for more than threshold, mark as offline
         deviceStatusHistory[deviceId] = {
           alive: false,
           lastCheck: now
         };
-        
+
         notifyDeviceStatus(deviceId, device.name, 'down', `No response for ${Math.round(timeSinceLastCheck / 60000)} minutes`);
         logEvent('device_offline', 'error', device.name, `Device "${device.name}" (${device.host}) is offline - no response for ${Math.round(timeSinceLastCheck / 60000)} minutes`, {
           deviceId: deviceId,
@@ -4107,41 +4117,29 @@ function scheduleDataCleanup() {
   const now = new Date();
   const scheduledTime = new Date();
   scheduledTime.setHours(2, 0, 0, 0);
-  
+
   // If it's already past 2 AM, schedule for tomorrow
   if (now > scheduledTime) {
     scheduledTime.setDate(scheduledTime.getDate() + 1);
   }
-  
+
   const timeUntilCleanup = scheduledTime.getTime() - now.getTime();
-  
+
   setTimeout(() => {
     cleanupOldData();
     // Then schedule it to run every 24 hours
     setInterval(cleanupOldData, 24 * 60 * 60 * 1000);
     setInterval(cleanupCounterHistory, 6 * 60 * 60 * 1000); // Every 6 hours
   }, timeUntilCleanup);
-  
+
   console.log(`[DATA RETENTION] Daily cleanup scheduled for ${scheduledTime.toLocaleTimeString()}`);
 }
 
 // Polling interval management
 let pollInterval;
 
-function startPolling() {
-  console.log(`[START POLLING] Settings pollingInterval: ${settings.pollingInterval} (type: ${typeof settings.pollingInterval})`);
-  console.log(`[START POLLING] About to call setInterval with ${settings.pollingInterval}ms`);
-  pollInterval = setInterval(pollSNMP, settings.pollingInterval);
-  console.log(`[START POLLING] setInterval created with ID: ${pollInterval}`);
-  console.log(`\n[POLLING] Started - Interval: ${settings.pollingInterval / 1000} seconds (${settings.pollingInterval / 60000} minutes)\n`);
-}
+// Duplicate startPolling/restartPolling removed
 
-function restartPolling() {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-  }
-  startPolling();
-}
 
 // Start SNMP polling
 let pollingIntervalId = null;
@@ -4155,23 +4153,23 @@ scheduleDataCleanup();
 // System information API endpoint
 app.get('/api/system-info', (req, res) => {
   const os = require('os');
-  
+
   // Get system uptime
   const uptime = os.uptime();
   const uptimeDays = Math.floor(uptime / 86400);
   const uptimeHours = Math.floor((uptime % 86400) / 3600);
   const uptimeMinutes = Math.floor((uptime % 3600) / 60);
   const uptimeString = `${uptimeDays}d ${uptimeHours}h ${uptimeMinutes}m`;
-  
+
   // Get memory info
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
-  
+
   // Get CPU info
   const cpus = os.cpus();
   const cpuCount = cpus.length;
-  
+
   // Simple CPU usage estimation (this is approximate)
   let totalIdle = 0;
   let totalTick = 0;
@@ -4184,10 +4182,10 @@ app.get('/api/system-info', (req, res) => {
   const idle = totalIdle / cpus.length;
   const total = totalTick / cpus.length;
   const cpuUsage = Math.round(100 - ~~(100 * idle / total));
-  
+
   // Get platform info
   const platform = os.platform() + ' ' + os.arch();
-  
+
   // Get storage info (disk usage)
   let storageInfo = { total: 0, used: 0, free: 0, percent: 0 };
   try {
@@ -4203,7 +4201,7 @@ app.get('/api/system-info', (req, res) => {
   } catch (err) {
     console.error('Error getting storage info:', err);
   }
-  
+
   res.json({
     nodeVersion: process.version,
     platform: platform,
@@ -4222,7 +4220,7 @@ app.get('/api/system-info', (req, res) => {
 // System stats API endpoint for dashboard header
 app.get('/api/system/stats', (req, res) => {
   const os = require('os');
-  
+
   // Get CPU usage
   const cpus = os.cpus();
   let totalIdle = 0;
@@ -4236,14 +4234,14 @@ app.get('/api/system/stats', (req, res) => {
   const idle = totalIdle / cpus.length;
   const total = totalTick / cpus.length;
   const cpuUsage = Math.round(100 - ~~(100 * idle / total));
-  
+
   // Get memory info
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
   const memoryPercent = Math.round((usedMemory / totalMemory) * 100);
   const memoryGB = (usedMemory / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
-  
+
   // Get disk info
   let diskUsage = 'N/A';
   try {
@@ -4257,7 +4255,7 @@ app.get('/api/system/stats', (req, res) => {
   } catch (err) {
     console.error('Error getting disk info:', err);
   }
-  
+
   res.json({
     cpu: Math.max(0, Math.min(100, cpuUsage)),
     memory: memoryGB, // Remove percentage
@@ -4482,11 +4480,11 @@ async function checkWebsiteStatus(target) {
       if (url.protocol === 'https:') {
         try {
           const cert = await getSSLCertificate(url.hostname, url.port || 443);
-          
+
           if (cert && cert.valid_to) {
             sslExpiry = new Date(cert.valid_to).getTime();
             sslValid = Date.now() < sslExpiry;
-            
+
             // Extract issuer information
             if (cert.issuer) {
               // Try different possible issuer fields
@@ -4500,7 +4498,7 @@ async function checkWebsiteStatus(target) {
                 sslIssuer = cert.issuer;
               }
             }
-            
+
             // Debug logging (reduced)
             console.log(`[WEBSITE SSL] ${target.url} - Valid: ${sslValid}, Expiry: ${sslExpiry ? new Date(sslExpiry).toISOString() : 'null'}, Issuer: ${sslIssuer}`);
           } else {
@@ -4684,13 +4682,13 @@ function startPolling() {
   if (pollingIntervalId) {
     clearInterval(pollingIntervalId);
   }
-  
+
   console.log(`[POLLING] Starting SNMP polling with interval: ${settings.pollingInterval}ms`);
   pollingIntervalId = setInterval(pollSNMP, settings.pollingInterval);
-  
+
   // Also start device timeout checking
   setInterval(checkDeviceTimeouts, 60000); // Check every minute
-  
+
   // Run initial poll
   setTimeout(pollSNMP, 1000);
 }
@@ -4794,7 +4792,7 @@ function sendPushNotificationToAll(data) {
 
 // Enhanced notification functions to include push notifications
 const originalNotifyDeviceStatus = notifyDeviceStatus;
-notifyDeviceStatus = function(deviceId, deviceName, status, details = '') {
+notifyDeviceStatus = function (deviceId, deviceName, status, details = '') {
   // Call original function
   originalNotifyDeviceStatus(deviceId, deviceName, status, details);
 
@@ -4823,7 +4821,7 @@ notifyDeviceStatus = function(deviceId, deviceName, status, details = '') {
 };
 
 const originalNotifyHighCpu = notifyHighCpu;
-notifyHighCpu = function(deviceId, deviceName, cpuValue) {
+notifyHighCpu = function (deviceId, deviceName, cpuValue) {
   // Call original function
   originalNotifyHighCpu(deviceId, deviceName, cpuValue);
 
@@ -4839,7 +4837,7 @@ notifyHighCpu = function(deviceId, deviceName, cpuValue) {
 };
 
 const originalNotifyPingStatus = notifyPingStatus;
-notifyPingStatus = function(targetId, targetName, targetHost, status, latency = null, packetLoss = null) {
+notifyPingStatus = function (targetId, targetName, targetHost, status, latency = null, packetLoss = null) {
   // Call original function
   originalNotifyPingStatus(targetId, targetName, targetHost, status, latency, packetLoss);
 
